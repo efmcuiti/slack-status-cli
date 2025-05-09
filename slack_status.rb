@@ -34,11 +34,11 @@ end
 
 def send_status(text, emoji, expiration = 0)
   uri = URI("https://slack.com/api/users.profile.set")
-
+  payload = build_payload(text: text, emoji: emoji, expiration: expiration)
   req = Net::HTTP::Post.new(uri)
   req["Content-Type"] = "application/json; charset=utf-8"
   req["Authorization"] = "Bearer #{SLACK_TOKEN}"
-  req.body = build_payload(text: text, emoji: emoji, expiration: expiration)
+  req.body = payload
 
   res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
     http.request(req)
@@ -59,7 +59,10 @@ end
 # --- ENTRY POINT ---
 if __FILE__ == $0
   mode = ARGV[0] || "myth"
-  return send_status("", "", 0) if mode == "clear"
+  if mode == "clear"
+    send_status("", "")
+    return
+  end
 
   text = ARGV[1] || MODE_MAPS[mode.to_sym][:text]
   emoji = ARGV[2] || MODE_MAPS[mode.to_sym][:emoji]
