@@ -23,7 +23,7 @@ ruby slack_status.rb                        # Sets a random mythological beast w
 ruby slack_status.rb myth                   # Sets a random mythological beast with no expiration
 ruby slack_status.rb lunch                  # Sets a lunch emoji and message for 1 hour
 ruby slack_status.rb break                  # Sets a break emoji and message for 30 minutes
-ruby slack_status.rb "In the zone" ":fire:" # Sets a custom message and emoji with no expiration
+ruby slack_status.rb "" "In the zone" ":fire:" # Sets a custom message and emoji with no expiration
 ruby slack_status.rb clear                  # Clears the status
 ```
 ---
@@ -31,7 +31,7 @@ ruby slack_status.rb clear                  # Clears the status
 ## 💡 Example
 
 ```bash
-ruby slack_status.rb "Pair programming" ":busts_in_silhouette:"
+ruby slack_status.rb "" "Pair programming" ":busts_in_silhouette:"
 ```
 
 ---
