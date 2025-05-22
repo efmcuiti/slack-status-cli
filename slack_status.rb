@@ -4,7 +4,7 @@ require 'uri'
 
 # --- CONFIGURATION ---
 SLACK_TOKEN = ENV['SLACK_SECRET_TOKEN']
-MYTH_MOJIS = [":wolf:", ":lion_face:", ":fire:", ":fox_face:"]
+MYTH_MOJIS = [":wolf:", ":lion_face:", ":fire:", ":fox_face:", ":butterfly:"]
 MODE_MAPS = {
   myth: {
     text: "",
