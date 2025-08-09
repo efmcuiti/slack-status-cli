@@ -1,10 +1,36 @@
+$LOAD_PATH.unshift(File.join(__dir__, "lib"))
+
+require 'music'
 require 'net/http'
 require 'json'
 require 'uri'
 
+def trim_slack_status(str, max_len: 100, ellipsis: "…")
+  return str if str.to_s.strip.empty? || str.grapheme_clusters.length <= max_len
+
+  # leave room for ellipsis
+  hard_limit = [max_len - ellipsis.grapheme_clusters.length, 0].max
+  chunks = str.grapheme_clusters
+  slice = chunks.first(hard_limit).join
+
+  # try to trim at last whitespace within the slice
+  soft = slice.rpartition(/\s/).first
+  trimmed = soft.empty? ? slice : soft.rstrip
+
+  "#{trimmed}#{ellipsis}"
+end
+
+def format_tune
+  tune = Music.current_track
+  return "🔇 sound of silence" if tune[:name].nil?
+  trim_slack_status(
+    "ヽ(o´∀`)ﾉ♪♬ :music: #{tune[:name]} - #{tune[:artist]} (#{tune[:album]})"
+  )
+end
+
 # --- CONFIGURATION ---
 SLACK_TOKEN = ENV['SLACK_SECRET_TOKEN']
-MYTH_MOJIS = [":wolf:", ":lion_face:", ":fire:", ":fox_face:", ":butterfly:"]
+MYTH_MOJIS = [":wolf:", ":lion_face:", ":phoenix_ash:", ":fox_face:", ":butterfly:"]
 MODE_MAPS = {
   myth: {
     text: "",
@@ -19,6 +45,10 @@ MODE_MAPS = {
     text: "#{MYTH_MOJIS.sample} Taking a break",
     emoji: ":coffee:",
     expiration: Time.now.to_i + 1800
+  },
+  musical_myth: {
+    text: format_tune,
+    emoji: MYTH_MOJIS.sample
   }
 }
 
@@ -56,17 +86,42 @@ def handle_response(res)
   end
 end
 
+trap("INT") do
+  puts "\nStopping Music tracker… sending goodbye to Music ❤️"
+  # Your final command here, e.g.:
+  `osascript -e 'tell application "Music" to pause'`
+  send_status("", "")
+  exit
+end
+
+trap("TERM") do
+  puts "\nReceived TERM signal… cleaning up 🎩"
+  # cleanup code here
+  send_status("", "")
+  exit
+end
+
 # --- ENTRY POINT ---
 if __FILE__ == $0
-  mode = ARGV[0] || "myth"
-  if mode == "clear"
+  mode = ARGV.fetch(0, "myth").to_sym
+  if mode == :clear
     send_status("", "")
     return
   end
 
-  text = ARGV[1] || MODE_MAPS[mode.to_sym][:text]
-  emoji = ARGV[2] || MODE_MAPS[mode.to_sym][:emoji]
-  expiration = MODE_MAPS[mode.to_sym][:expiration] || 0
+  text = ARGV[1] || MODE_MAPS[mode][:text]
+  emoji = ARGV[2] || MODE_MAPS[mode][:emoji]
+  expiration = MODE_MAPS[mode][:expiration] || 0
 
-  send_status(text, emoji, expiration)
+  if mode == :musical_myth
+    loop do
+      text = format_tune
+      puts "Updating status with: #{text}"
+      send_status(text, emoji, expiration)
+      puts "😴 for 120 seconds... (aka 2 minutes 😅)"
+      sleep 120
+    end
+  else
+    send_status(text, emoji, expiration)
+  end
 end

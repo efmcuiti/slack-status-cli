@@ -25,6 +25,7 @@ ruby slack_status.rb lunch                  # Sets a lunch emoji and message for
 ruby slack_status.rb break                  # Sets a break emoji and message for 30 minutes
 ruby slack_status.rb "" "In the zone" ":fire:" # Sets a custom message and emoji with no expiration
 ruby slack_status.rb clear                  # Clears the status
+ruby slack_status.rb musical_myth          # Sets a random musical mythological beast with no expiration and the current Music song!!
 ```
 ---
 
