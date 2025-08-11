@@ -24,7 +24,7 @@ def format_tune
   tune = Music.current_track
   return "🔇 sound of silence" if tune[:name].nil?
   trim_slack_status(
-    "ヽ(o´∀`)ﾉ♪♬ :music: #{tune[:name]} - #{tune[:artist]} (#{tune[:album]})"
+    "ヽ(o´∀`)ﾉ♪♬  #{MYTH_MOJIS.sample} #{tune[:name]} - #{tune[:artist]} (#{tune[:album]})"
   )
 end
 
@@ -48,7 +48,7 @@ MODE_MAPS = {
   },
   musical_myth: {
     text: format_tune,
-    emoji: MYTH_MOJIS.sample
+    emoji: ":music:"
   }
 }
 
@@ -88,8 +88,6 @@ end
 
 trap("INT") do
   puts "\nStopping Music tracker… sending goodbye to Music ❤️"
-  # Your final command here, e.g.:
-  `osascript -e 'tell application "Music" to pause'`
   send_status("", "")
   exit
 end
