@@ -120,7 +120,7 @@ class Slack
     tune = Music.current_track
     return "🔇 sound of silence" if tune[:name].nil?
     trim_slack_status(
-      "ヽ(o´∀`)ﾉ♪♬  #{MYTH_MOJIS.sample} #{tune[:name]} - #{tune[:artist]} (#{tune[:album]})"
+      "♪♬  #{MYTH_MOJIS.sample} #{tune[:name]} - #{tune[:artist]} (#{tune[:album]})"
     )
   end
 
