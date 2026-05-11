@@ -34,7 +34,9 @@ ruby slack_status.rb myth                   # Sets a random mythological beast e
 ruby slack_status.rb lunch                  # Sets lunch status (expires in 1 hour)
 ruby slack_status.rb break                  # Sets break status (expires in 30 minutes)
 ruby slack_status.rb clear                  # Clears the status
-ruby slack_status.rb musical_myth           # Continuously updates with current Apple Music track
+ruby slack_status.rb musical_myth           # Continuously updates with current native Apple Music track
+ruby slack_status.rb musical_myth native    # Same as above (explicit native Music.app)
+ruby slack_status.rb musical_myth web       # Reads macOS "Now Playing" (covers music.apple.com, Spotify web, etc.)
 ruby slack_status.rb custom "Custom message" ":fire:" [expiration_seconds]  # Custom status
 ```
 
@@ -48,6 +50,21 @@ The `musical_myth` mode runs continuously, updating your Slack status every 2 mi
 - Graceful handling when no music is playing (status text falls back to `🔇 sound of silence`)
 
 Press `Ctrl+C` to stop and automatically clear your status. If a previous run leaves a stale status behind, you can wipe it with `ruby slack_status.rb clear`.
+
+#### Source selector: `native` vs `web`
+
+`musical_myth` takes an optional positional arg picking where to read the current track from:
+
+- **`native`** (default): AppleScript against the native `Music.app`. Unchanged behavior.
+- **`web`**: Reads macOS's system-wide "Now Playing" via [`nowplaying-cli`](https://github.com/kirtan-shah/nowplaying-cli). This is what captures playback from `music.apple.com` in any browser, as well as anything else macOS treats as the active media source (Spotify web, YouTube Music, podcasts, etc.). Naming it `web` is shorthand for the original "I use music.apple.com" use case.
+
+Install requirement for `web`:
+
+```bash
+brew install nowplaying-cli
+```
+
+Caveat: `nowplaying-cli` relies on the private `MediaRemote` framework. On modern macOS (14.4+) Apple has tightened access to this API. The maintained `nowplaying-cli` build works as of writing, but if Apple ever closes it further the `web` source will return empty and the status will fall back to `🔇 sound of silence`, identical to today's "Music app closed" behavior.
 
 ---
 
@@ -83,7 +100,9 @@ ruby slack_status.rb musical_myth &
 kill %1   # TERM is trapped, so the status is cleared on exit
 
 # Debug Apple Music detection without touching Slack
-ruby lib/music.rb
+ruby lib/music.rb            # native Music.app
+ruby lib/music.rb native     # explicit native Music.app
+ruby lib/music.rb web        # macOS Now Playing (music.apple.com etc.)
 ```
 
 ---

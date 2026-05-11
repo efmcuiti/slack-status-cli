@@ -7,8 +7,9 @@ class Slack
   SLACK_TOKEN = ENV['SLACK_SECRET_TOKEN']
   MYTH_MOJIS = [":wolf:", ":lion_face:", ":phoenix_ash:", ":fox_face:", ":butterfly:"]
 
-  def initialize(mode: :myth, emoji: nil, text: nil, expiration: 0)
+  def initialize(mode: :myth, emoji: nil, text: nil, expiration: 0, music_source: :native)
     @mode = mode || :myth
+    @music_source = music_source || :native
     @emoji = emoji || mode_map&.fetch(:emoji)
     @text = text || mode_map&.fetch(:text)
     @expiration = evaluate_expiration(expiration) || mode_map&.fetch(:expiration, evaluate_expiration(expiration)) || 0
@@ -35,7 +36,7 @@ class Slack
   end
 
   private
-  attr_accessor :mode, :emoji, :text, :expiration
+  attr_accessor :mode, :emoji, :text, :expiration, :music_source
 
   def evaluate_expiration(value)
     return if value.nil? || value.to_s.strip.empty?
@@ -117,7 +118,7 @@ class Slack
   end
 
   def format_tune
-    tune = Music.current_track
+    tune = Music.current_track(source: music_source)
     return "🔇 sound of silence" if tune[:name].nil?
     trim_slack_status(
       "♪♬  #{MYTH_MOJIS.sample} #{tune[:name]} - #{tune[:artist]} (#{tune[:album]})"
