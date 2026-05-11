@@ -35,17 +35,19 @@ ruby slack_status.rb lunch                  # Sets lunch status (expires in 1 ho
 ruby slack_status.rb break                  # Sets break status (expires in 30 minutes)
 ruby slack_status.rb clear                  # Clears the status
 ruby slack_status.rb musical_myth           # Continuously updates with current Apple Music track
-ruby slack_status.rb "" "Custom message" ":fire:" [expiration_seconds]  # Custom status
+ruby slack_status.rb custom "Custom message" ":fire:" [expiration_seconds]  # Custom status
 ```
+
+> Reserved first-arg modes are `myth`, `lunch`, `break`, `clear`, and `musical_myth`. Any other value (`custom`, `focus`, `""`, etc.) is treated as a custom status and the remaining args (`text`, `emoji`, `expiration_seconds`) take over.
 
 ### Musical Myth Mode
 
 The `musical_myth` mode runs continuously, updating your Slack status every 2 minutes with:
-- A random mythological creature emoji
-- Currently playing Apple Music track (song, artist, album)
-- Graceful handling when no music is playing
+- The `:music:` emoji as the Slack status emoji
+- A status text built from a random mythological creature emoji plus the currently playing Apple Music track (song, artist, album)
+- Graceful handling when no music is playing (status text falls back to `🔇 sound of silence`)
 
-Press `Ctrl+C` to stop and automatically clear your status.
+Press `Ctrl+C` to stop and automatically clear your status. If a previous run leaves a stale status behind, you can wipe it with `ruby slack_status.rb clear`.
 
 ---
 
@@ -53,13 +55,35 @@ Press `Ctrl+C` to stop and automatically clear your status.
 
 ```bash
 # Custom status with fire emoji
-ruby slack_status.rb "" "Deep in the code" ":fire:"
+ruby slack_status.rb custom "Deep in the code" ":fire:"
 
 # Custom status that expires in 1 hour (3600 seconds)
-ruby slack_status.rb "" "In a meeting" ":speech_balloon:" 3600
+ruby slack_status.rb custom "In a meeting" ":speech_balloon:" 3600
+
+# Heads-down / focus block for 2 hours
+ruby slack_status.rb custom "Heads down — focusing" ":no_entry:" 7200
+
+# Out of office for the rest of the workday (8 hours)
+ruby slack_status.rb custom "OOO — back tomorrow" ":palm_tree:" 28800
+
+# Doctor / personal appointment for 1 hour
+ruby slack_status.rb custom "Personal appointment" ":hospital:" 3600
+
+# Commute for 30 minutes
+ruby slack_status.rb custom "Commuting" ":bike:" 1800
+
+# Pairing session for 1 hour
+ruby slack_status.rb custom "Pairing" ":handshake:" 3600
 
 # Start music tracking (runs until stopped)
 ruby slack_status.rb musical_myth
+
+# Run music tracking in the background and stop it cleanly later
+ruby slack_status.rb musical_myth &
+kill %1   # TERM is trapped, so the status is cleared on exit
+
+# Debug Apple Music detection without touching Slack
+ruby lib/music.rb
 ```
 
 ---
@@ -85,6 +109,15 @@ ruby slack_status.rb musical_myth
 
 ---
 
+## ⚠️ Notes & Gotchas
+
+- **Status text is silently truncated to 100 graphemes** with an ellipsis (`…`). Long song titles or custom messages will be clipped at the last whitespace inside the limit.
+- **AppleScript runs on every invocation, not just `musical_myth`.** The internal mode map is built eagerly, so `osascript` is shelled out even for `myth`, `lunch`, `break`, and `clear`. macOS is effectively required for any mode; on non-macOS systems the call fails and the script keeps going.
+- **Missing or invalid token → `not_authed`.** `SLACK_SECRET_TOKEN` is read once at load time with no validation. If it's unset or wrong, the request still fires and Slack responds with `❌ Failed to update status: not_authed`. Double-check `echo $SLACK_SECRET_TOKEN` before debugging further.
+- **`clear` is your escape hatch.** If `musical_myth` (or any expiring status) leaves something stuck, run `ruby slack_status.rb clear` to wipe it.
+
+---
+
 ## 📜 License
 
-MIT — your code, your fire. Burn responsibly 🔥
+Intended to be MIT-licensed, but no `LICENSE` file is committed to the repo yet — treat the code as "all rights reserved" until one is added.
