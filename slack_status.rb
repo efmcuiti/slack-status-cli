@@ -23,14 +23,8 @@ end
 
 if __FILE__ == $0
   mode = ARGV[0]&.to_sym
-  music_source = :native
 
   if mode == :musical_myth
-    raw_source = ARGV[1]&.downcase
-    music_source = (raw_source || "native").to_sym
-    unless %i[native web].include?(music_source)
-      abort "musical_myth source must be 'native' or 'web' (got: #{ARGV[1].inspect})"
-    end
     text = nil
     emoji = nil
     expiration = nil
@@ -44,8 +38,7 @@ if __FILE__ == $0
     mode: mode,
     text: text,
     emoji: emoji,
-    expiration: expiration,
-    music_source: music_source
+    expiration: expiration
   )
 
   slack.update_status

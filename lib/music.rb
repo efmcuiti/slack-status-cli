@@ -1,10 +1,8 @@
 require 'open3'
-require 'json'
 
 class Music
   NULL_RESPONSE = "null|null|null"
   NULL_TRACK = { name: nil, artist: nil, album: nil }.freeze
-  VALID_SOURCES = %i[native web].freeze
 
   SAFE_MUSIC_SCRIPT = <<~APPLESCRIPT
     tell application "Music"
@@ -19,39 +17,14 @@ class Music
     end tell
   APPLESCRIPT
 
-  def self.current_track(source: :native, lang: nil, script: SAFE_MUSIC_SCRIPT)
-    source = (source || :native).to_sym
-    unless VALID_SOURCES.include?(source)
-      raise ArgumentError, "unknown music source: #{source.inspect} (expected one of #{VALID_SOURCES.inspect})"
-    end
+  def self.current_track
+    track = fetch_now_playing
+    return track unless track[:name].nil?
 
-    case source
-    when :native then fetch_native(lang: lang, script: script)
-    when :web    then fetch_web
-    end
+    fetch_apple_music_fallback
   end
 
-  def self.fetch_native(lang: nil, script: SAFE_MUSIC_SCRIPT)
-    cmd = ["osascript"]
-    cmd += ["-l", lang] if lang
-    cmd += ["-e", script]
-    stdout, stderr, status = Open3.capture3(*cmd)
-
-    unless status.success?
-      puts "⛔️ Could not get current track: #{stderr.strip}"
-      return NULL_TRACK.dup
-    end
-
-    parts = stdout.strip.split("|")
-
-    {
-      name: nullify(parts[0]),
-      artist: nullify(parts[1]),
-      album: nullify(parts[2])
-    }
-  end
-
-  def self.fetch_web
+  def self.fetch_now_playing
     stdout, stderr, status = Open3.capture3("nowplaying-cli", "get", "title", "artist", "album")
 
     unless status.success?
@@ -70,20 +43,37 @@ class Music
     puts "⛔️ `nowplaying-cli` not found. Install with: brew install nowplaying-cli"
     NULL_TRACK.dup
   end
+  private_class_method :fetch_now_playing
+
+  def self.fetch_apple_music_fallback
+    stdout, stderr, status = Open3.capture3("osascript", "-e", SAFE_MUSIC_SCRIPT)
+
+    unless status.success?
+      puts "⛔️ AppleScript fallback failed: #{stderr.strip}"
+      return NULL_TRACK.dup
+    end
+
+    parts = stdout.strip.split("|")
+
+    {
+      name: nullify(parts[0]),
+      artist: nullify(parts[1]),
+      album: nullify(parts[2])
+    }
+  end
+  private_class_method :fetch_apple_music_fallback
 
   def self.nullify(value)
     return nil if value.nil?
+
     stripped = value.to_s.strip
     return nil if stripped.empty? || stripped == "null"
+
     stripped
   end
-
-  def playpause
-    `osascript -e 'tell application "Music" to playpause'`
-  end
+  private_class_method :nullify
 end
 
 if __FILE__ == $0
-  source = (ARGV[0] || "native").to_sym
-  puts "Music (#{source}): #{Music.current_track(source: source)}"
+  puts "Music: #{Music.current_track}"
 end
