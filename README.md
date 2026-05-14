@@ -24,6 +24,14 @@ A Ruby-based CLI tool for updating your Slack status with mythological flair and
    export SLACK_SECRET_TOKEN=xoxp-...
    ```
 
+3. **Install `nowplaying-cli`** (required for `musical_myth`):
+
+   ```bash
+   brew install nowplaying-cli
+   ```
+
+   This is what `musical_myth` reads to pick up the currently playing track. If it's missing, the loop falls back to AppleScript against the native `Music.app`; if both fail, the status text falls back to `🔇 sound of silence`.
+
 ---
 
 ## 🔥 Usage
@@ -34,9 +42,7 @@ ruby slack_status.rb myth                   # Sets a random mythological beast e
 ruby slack_status.rb lunch                  # Sets lunch status (expires in 1 hour)
 ruby slack_status.rb break                  # Sets break status (expires in 30 minutes)
 ruby slack_status.rb clear                  # Clears the status
-ruby slack_status.rb musical_myth           # Continuously updates with current native Apple Music track
-ruby slack_status.rb musical_myth native    # Same as above (explicit native Music.app)
-ruby slack_status.rb musical_myth web       # Reads macOS "Now Playing" (covers music.apple.com, Spotify web, etc.)
+ruby slack_status.rb musical_myth           # Continuously updates with the currently playing track
 ruby slack_status.rb custom "Custom message" ":fire:" [expiration_seconds]  # Custom status
 ```
 
@@ -46,25 +52,18 @@ ruby slack_status.rb custom "Custom message" ":fire:" [expiration_seconds]  # Cu
 
 The `musical_myth` mode runs continuously, updating your Slack status every 2 minutes with:
 - The `:music:` emoji as the Slack status emoji
-- A status text built from a random mythological creature emoji plus the currently playing Apple Music track (song, artist, album)
+- A status text built from a random mythological creature emoji plus the currently playing track (song, artist, album)
 - Graceful handling when no music is playing (status text falls back to `🔇 sound of silence`)
 
 Press `Ctrl+C` to stop and automatically clear your status. If a previous run leaves a stale status behind, you can wipe it with `ruby slack_status.rb clear`.
 
-#### Source selector: `native` vs `web`
+#### How the current track is detected
 
-`musical_myth` takes an optional positional arg picking where to read the current track from:
+`musical_myth` reads the track from macOS's system-wide "Now Playing" source via [`nowplaying-cli`](https://github.com/kirtan-shah/nowplaying-cli). That covers anything the OS treats as the active media source: the native `Music.app`, Spotify desktop, `music.apple.com` in any browser, QuickTime Player, Podcasts.app, and most browser tabs that integrate with the Media Session API (YouTube, SoundCloud, etc.).
 
-- **`native`** (default): AppleScript against the native `Music.app`. Unchanged behavior.
-- **`web`**: Reads macOS's system-wide "Now Playing" via [`nowplaying-cli`](https://github.com/kirtan-shah/nowplaying-cli). This is what captures playback from `music.apple.com` in any browser, as well as anything else macOS treats as the active media source (Spotify web, YouTube Music, podcasts, etc.). Naming it `web` is shorthand for the original "I use music.apple.com" use case.
+If `nowplaying-cli` is missing or returns no track, the loop silently falls back to AppleScript against the native `Music.app`. If that also returns nothing, the status text falls back to `🔇 sound of silence`.
 
-Install requirement for `web`:
-
-```bash
-brew install nowplaying-cli
-```
-
-Caveat: `nowplaying-cli` relies on the private `MediaRemote` framework. On modern macOS (14.4+) Apple has tightened access to this API. The maintained `nowplaying-cli` build works as of writing, but if Apple ever closes it further the `web` source will return empty and the status will fall back to `🔇 sound of silence`, identical to today's "Music app closed" behavior.
+Caveat: `nowplaying-cli` relies on the private `MediaRemote` framework. On modern macOS (14.4+) Apple has tightened access to this API. The maintained `nowplaying-cli` build works as of writing, but if Apple ever closes it further the primary path will return empty and the AppleScript fallback (native `Music.app` only) is what you'll be left with.
 
 ---
 
@@ -99,10 +98,8 @@ ruby slack_status.rb musical_myth
 ruby slack_status.rb musical_myth &
 kill %1   # TERM is trapped, so the status is cleared on exit
 
-# Debug Apple Music detection without touching Slack
-ruby lib/music.rb            # native Music.app
-ruby lib/music.rb native     # explicit native Music.app
-ruby lib/music.rb web        # macOS Now Playing (music.apple.com etc.)
+# Debug music detection without touching Slack
+ruby lib/music.rb
 ```
 
 ---
@@ -114,7 +111,7 @@ ruby lib/music.rb web        # macOS Now Playing (music.apple.com etc.)
 ├── slack_status.rb        # Main CLI script
 ├── lib/
 │   ├── slack.rb          # Slack API integration
-│   └── music.rb          # Apple Music integration via AppleScript
+│   └── music.rb          # Now-playing detection (nowplaying-cli + AppleScript fallback)
 └── README.md
 ```
 
@@ -131,7 +128,7 @@ ruby lib/music.rb web        # macOS Now Playing (music.apple.com etc.)
 ## ⚠️ Notes & Gotchas
 
 - **Status text is silently truncated to 100 graphemes** with an ellipsis (`…`). Long song titles or custom messages will be clipped at the last whitespace inside the limit.
-- **AppleScript runs on every invocation, not just `musical_myth`.** The internal mode map is built eagerly, so `osascript` is shelled out even for `myth`, `lunch`, `break`, and `clear`. macOS is effectively required for any mode; on non-macOS systems the call fails and the script keeps going.
+- **Track detection runs on every invocation, not just `musical_myth`.** The internal mode map is built eagerly, so `nowplaying-cli` (and the AppleScript fallback if needed) is shelled out even for `myth`, `lunch`, `break`, and `clear`. macOS is effectively required for any mode; on non-macOS systems the call fails and the script keeps going.
 - **Missing or invalid token → `not_authed`.** `SLACK_SECRET_TOKEN` is read once at load time with no validation. If it's unset or wrong, the request still fires and Slack responds with `❌ Failed to update status: not_authed`. Double-check `echo $SLACK_SECRET_TOKEN` before debugging further.
 - **`clear` is your escape hatch.** If `musical_myth` (or any expiring status) leaves something stuck, run `ruby slack_status.rb clear` to wipe it.
 
