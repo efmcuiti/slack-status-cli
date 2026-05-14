@@ -136,11 +136,35 @@ class Slack
   end
 
   def handle_response(res)
-    response = JSON.parse(res.body)
+    body = res.body.to_s
+
+    unless res.is_a?(Net::HTTPSuccess)
+      puts "❌ Slack HTTP #{res.code} #{res.message}#{body.strip.empty? ? '' : " — #{body_excerpt(body)}"}"
+      return
+    end
+
+    if body.strip.empty?
+      puts "⚠️  Empty response from Slack (HTTP #{res.code}); skipping this tick."
+      return
+    end
+
+    response =
+      begin
+        JSON.parse(body)
+      rescue JSON::ParserError => e
+        puts "⚠️  Non-JSON response from Slack: #{e.message} — #{body_excerpt(body)}"
+        return
+      end
+
     if response["ok"]
       puts "✅ Slack status updated!"
     else
       puts "❌ Failed to update status: #{response["error"]}"
     end
+  end
+
+  def body_excerpt(body, limit: 200)
+    snippet = body.strip
+    snippet.length > limit ? "#{snippet[0, limit]}…" : snippet
   end
 end
