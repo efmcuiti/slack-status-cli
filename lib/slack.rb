@@ -21,7 +21,11 @@ class Slack
       clear_status
     when :musical_myth
       loop do
-        music_status_update
+        begin
+          music_status_update
+        rescue StandardError => e
+          puts "⚠️  Tick failed: #{e.class}: #{e.message} — will retry next cycle."
+        end
         puts "😴 for 120 seconds... (aka 2 minutes 😅)"
         sleep 120
       end
