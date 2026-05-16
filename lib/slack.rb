@@ -7,6 +7,21 @@ class Slack
   SLACK_TOKEN = ENV['SLACK_SECRET_TOKEN']
   MYTH_MOJIS = [":wolf:", ":lion_face:", ":phoenix_ash:", ":fox_face:", ":butterfly:"]
 
+  PAUSED_PHRASES = [
+    "intermission — the muse catches their breath",
+    "the oracle is thinking…",
+    "holding the lyre still",
+    "mid-myth pause (not the final chapter)",
+    "feral focus: recharge mode",
+    "silence before the chorus",
+    "the siren is on break",
+    "embers cooling — not extinct"
+  ]
+
+  PLAYING_SLEEP = 120
+  PAUSED_SLEEP = 30
+  SILENT_SLEEP = 120
+
   def initialize(mode: :myth, emoji: nil, text: nil, expiration: 0)
     @mode = mode || :myth
     @emoji = emoji || mode_map&.fetch(:emoji)
@@ -20,13 +35,17 @@ class Slack
       clear_status
     when :musical_myth
       loop do
-        begin
-          music_status_update
-        rescue StandardError => e
-          puts "⚠️  Tick failed: #{e.class}: #{e.message} — will retry next cycle."
-        end
-        puts "😴 for 120 seconds... (aka 2 minutes 😅)"
-        sleep 120
+        tune =
+          begin
+            music_status_update
+          rescue StandardError => e
+            puts "⚠️  Tick failed: #{e.class}: #{e.message} — will retry next cycle."
+            nil
+          end
+
+        interval = next_interval(tune)
+        puts "😴 for #{interval} seconds... (#{state_label(tune)})"
+        sleep interval
       end
     else
       send_status
@@ -73,9 +92,36 @@ class Slack
   end
 
   def music_status_update
-    self.text = format_tune
+    tune = Music.current_track
+    self.text = format_tune(tune)
     puts "Updating status with: #{text}"
     send_status
+    tune
+  end
+
+  def next_interval(tune)
+    case tune_state(tune)
+    when :paused then PAUSED_SLEEP
+    when :silent then SILENT_SLEEP
+    else PLAYING_SLEEP
+    end
+  end
+
+  def state_label(tune)
+    case tune_state(tune)
+    when :paused then "paused — quick check-in"
+    when :silent then "silent — long nap"
+    else "playing — full cycle"
+    end
+  end
+
+  # Unknown tune (tick errored out) defaults to :playing so we keep the
+  # conservative 120s cadence instead of hammering Slack during transient
+  # failures.
+  def tune_state(tune)
+    return :playing if tune.nil?
+    return :silent if tune[:name].nil?
+    tune[:playing] ? :playing : :paused
   end
 
   def mode_map
@@ -120,12 +166,18 @@ class Slack
     "#{trimmed}#{ellipsis}"
   end
 
-  def format_tune
-    tune = Music.current_track
+  def format_tune(tune = Music.current_track)
     return "🔇 sound of silence" if tune[:name].nil?
-    trim_slack_status(
-      "♪♬  #{MYTH_MOJIS.sample} #{tune[:name]} - #{tune[:artist]} (#{tune[:album]})"
-    )
+    return trim_slack_status(paused_status(tune)) unless tune[:playing]
+    trim_slack_status(playing_status(tune))
+  end
+
+  def playing_status(tune)
+    "♪♬  #{MYTH_MOJIS.sample} #{tune[:name]} - #{tune[:artist]} (#{tune[:album]})"
+  end
+
+  def paused_status(tune)
+    "⏸️ #{MYTH_MOJIS.sample} #{PAUSED_PHRASES.sample} — #{tune[:name]} - #{tune[:artist]}"
   end
 
   def build_payload(text:, emoji:, expiration: 0)
