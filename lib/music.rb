@@ -1,8 +1,9 @@
 require 'open3'
+require 'json'
 
 class Music
-  NULL_RESPONSE = "null|null|null"
-  NULL_TRACK = { name: nil, artist: nil, album: nil }.freeze
+  NULL_RESPONSE = "null|null|null|null"
+  NULL_TRACK = { name: nil, artist: nil, album: nil, playing: false }.freeze
 
   SAFE_MUSIC_SCRIPT = <<~APPLESCRIPT
     tell application "Music"
@@ -10,7 +11,8 @@ class Music
       if player state is stopped then return "#{NULL_RESPONSE}"
       try
         set t to current track
-        return (name of t) & "|" & (artist of t) & "|" & (album of t)
+        set s to (player state as text)
+        return s & "|" & (name of t) & "|" & (artist of t) & "|" & (album of t)
       on error number -1728
         return "#{NULL_RESPONSE}"
       end try
@@ -25,19 +27,26 @@ class Music
   end
 
   def self.fetch_now_playing
-    stdout, stderr, status = Open3.capture3("nowplaying-cli", "get", "title", "artist", "album")
+    stdout, stderr, status = Open3.capture3(
+      "nowplaying-cli", "get", "--json", "title", "artist", "album", "playbackRate"
+    )
 
     unless status.success?
       puts "⛔️ nowplaying-cli failed: #{stderr.strip}"
       return NULL_TRACK.dup
     end
 
-    title, artist, album = stdout.split("\n").map(&:to_s).map(&:strip)
+    payload = parse_json(stdout)
+    return NULL_TRACK.dup if payload.nil?
+
+    title = nullify(payload["title"])
+    return NULL_TRACK.dup if title.nil?
 
     {
-      name: nullify(title),
-      artist: nullify(artist),
-      album: nullify(album)
+      name: title,
+      artist: nullify(payload["artist"]),
+      album: nullify(payload["album"]),
+      playing: playback_rate_to_playing(payload["playbackRate"])
     }
   rescue Errno::ENOENT
     puts "⛔️ `nowplaying-cli` not found. Install with: brew install nowplaying-cli"
@@ -53,15 +62,35 @@ class Music
       return NULL_TRACK.dup
     end
 
-    parts = stdout.strip.split("|")
+    state, name, artist, album = stdout.strip.split("|").map { |part| nullify(part) }
+    return NULL_TRACK.dup if name.nil?
 
     {
-      name: nullify(parts[0]),
-      artist: nullify(parts[1]),
-      album: nullify(parts[2])
+      name: name,
+      artist: artist,
+      album: album,
+      playing: state == "playing"
     }
   end
   private_class_method :fetch_apple_music_fallback
+
+  def self.parse_json(raw)
+    JSON.parse(raw.to_s.strip)
+  rescue JSON::ParserError => e
+    puts "⛔️ Could not parse nowplaying-cli JSON: #{e.message}"
+    nil
+  end
+  private_class_method :parse_json
+
+  # Treat an explicit playbackRate of 0 as paused. Missing/nil rate falls
+  # back to "playing" to preserve prior behavior when MediaRemote omits the
+  # field.
+  def self.playback_rate_to_playing(rate)
+    return false if rate.is_a?(Numeric) && rate <= 0
+    return false if rate.is_a?(String) && rate.strip == "0"
+    true
+  end
+  private_class_method :playback_rate_to_playing
 
   def self.nullify(value)
     return nil if value.nil?
