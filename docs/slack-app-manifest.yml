@@ -1,0 +1,40 @@
+# Slack App manifest for slack-status-cli.
+#
+# Usage:
+#   1. Open https://api.slack.com/apps?new_app=1
+#   2. Pick "From a manifest"
+#   3. Pick your workspace
+#   4. Paste the contents of this file
+#   5. Confirm; Slack will create the app with exactly the right scope + redirect.
+#
+# Notes:
+#   - We request only two user scopes:
+#       - `users.profile:write` so the app can edit YOUR profile status.
+#       - `emoji:read` so `migrate-emojis` can list custom emojis on the
+#         source workspace and download them. (Read-only; never writes.)
+#     No bot scopes, no chat:write, no other reads.
+#   - No `features.bot_user` block: this app does not have a bot identity, so
+#     declaring one without bot scopes would fail manifest validation with
+#     "Bot user requires bot scope".
+#   - The redirect URL points at localhost; our OAuth helper boots a one-shot
+#     listener on 127.0.0.1:53682 to capture the install callback.
+#   - Change `name` / `description` / `background_color` to taste; they're
+#     purely cosmetic in the Slack app directory.
+
+display_information:
+  name: slack-status-cli
+  description: Personal CLI for setting my Slack status with mythological flair.
+  background_color: "#1f1235"
+
+oauth_config:
+  redirect_urls:
+    - http://localhost:53682/callback
+  scopes:
+    user:
+      - users.profile:write
+      - emoji:read
+
+settings:
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
