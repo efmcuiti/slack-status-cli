@@ -4,7 +4,6 @@ require 'json'
 require 'uri'
 
 class Slack
-  SLACK_TOKEN = ENV['SLACK_SECRET_TOKEN']
   MYTH_MOJIS = [":wolf:", ":lion_face:", ":phoenix_ash:", ":fox_face:", ":butterfly:"]
 
   PAUSED_PHRASES = [
@@ -22,11 +21,27 @@ class Slack
   PAUSED_SLEEP = 30
   SILENT_SLEEP = 120
 
-  def initialize(mode: :myth, emoji: nil, text: nil, expiration: 0)
+  def initialize(token:, mode: :myth, emoji: nil, text: nil, expiration: 0)
+    @token = token
     @mode = mode || :myth
     @emoji = emoji || mode_map&.fetch(:emoji)
     @text = text || mode_map&.fetch(:text)
     @expiration = evaluate_expiration(expiration) || mode_map&.fetch(:expiration, evaluate_expiration(expiration)) || 0
+  end
+
+  # Calls auth.test to validate the token and resolve the workspace/user it
+  # belongs to. Returns the parsed JSON response on success, raises on HTTP
+  # failure. Used by the `doctor` subcommand.
+  def auth_test
+    slack_get("auth.test")
+  end
+
+  # Calls emoji.list and returns the parsed JSON. Requires the `emoji:read`
+  # scope on the user token. Each value in the `emoji` map is either an HTTPS
+  # URL (real custom emoji) or `"alias:<other_name>"` (an alias of another
+  # emoji on the same workspace).
+  def emoji_list
+    slack_get("emoji.list")
   end
 
   def update_status
@@ -60,6 +75,24 @@ class Slack
   private
   attr_accessor :mode, :emoji, :text, :expiration
 
+  # Slack Web API methods are documented as accepting GET when no body is
+  # required (auth.test, emoji.list). Returns parsed JSON on 2xx, raises on
+  # transport-level failure. API-level errors (`{ "ok": false, "error": ... }`)
+  # are surfaced to the caller via the parsed hash so they can map error codes
+  # to actionable hints.
+  def slack_get(method)
+    uri = URI("https://slack.com/api/#{method}")
+    req = Net::HTTP::Get.new(uri)
+    req["Authorization"] = "Bearer #{@token}"
+
+    res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+      http.request(req)
+    end
+
+    raise "Slack HTTP #{res.code} #{res.message}" unless res.is_a?(Net::HTTPSuccess)
+    JSON.parse(res.body)
+  end
+
   def evaluate_expiration(value)
     return if value.nil? || value.to_s.strip.empty?
     return unless integer_string?(value)
@@ -67,7 +100,7 @@ class Slack
   end
 
   def integer_string?(str)
-    /\A[+-]?\d+\z/.match?(str)
+    /\A[+-]?\d+\z/.match?(str.to_s)
   end
 
   def reset_status
@@ -81,7 +114,7 @@ class Slack
     payload = build_payload(text: text, emoji: emoji, expiration: expiration)
     req = Net::HTTP::Post.new(uri)
     req["Content-Type"] = "application/json; charset=utf-8"
-    req["Authorization"] = "Bearer #{SLACK_TOKEN}"
+    req["Authorization"] = "Bearer #{@token}"
     req.body = payload
 
     res = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
@@ -146,7 +179,7 @@ class Slack
       },
       musical_myth: {
         text: format_tune,
-        emoji: ":music:"
+        emoji: ":musical_note:"
       }
     }
   end
@@ -219,7 +252,14 @@ class Slack
   end
 
   def body_excerpt(body, limit: 200)
-    snippet = body.strip
+    snippet = scrub(body.strip)
     snippet.length > limit ? "#{snippet[0, limit]}…" : snippet
+  end
+
+  # Defense-in-depth: even though Slack's responses don't echo the token,
+  # scrub any `xox?-` pattern before printing so a future log statement
+  # can't accidentally leak a secret.
+  def scrub(text)
+    text.to_s.gsub(/\bxox[a-z]-[A-Za-z0-9-]+/) { |m| "xox?-…#{m[-4, 4]}" }
   end
 end
