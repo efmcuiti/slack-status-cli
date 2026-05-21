@@ -24,12 +24,17 @@ def parse_global_flags(argv)
     backend: nil,
     client_id: nil,
     client_secret: nil,
+    from: nil,
+    to: nil,
+    out: nil,
+    filter: nil,
+    open_browser: true,
   }
 
   parser = OptionParser.new do |o|
     o.banner = "Usage: ruby slack_status.rb [options] <command> [args]"
     o.separator ""
-    o.separator "Commands: setup, doctor, config get|set, profiles list,"
+    o.separator "Commands: setup, doctor, config get|set, profiles list, migrate-emojis,"
     o.separator "          plus any mode (myth, lunch, break, clear, musical_myth, custom)"
     o.separator ""
     o.on("--profile NAME", "Profile name (default: $SLACK_STATUS_PROFILE or 'default')") { |v| options[:profile] = v }
@@ -42,6 +47,11 @@ def parse_global_flags(argv)
     o.on("--backend NAME", BACKENDS, "(setup) Storage backend: #{BACKENDS.join('|')}") { |v| options[:backend] = v }
     o.on("--client-id ID", "(setup) Slack App client_id") { |v| options[:client_id] = v }
     o.on("--client-secret SECRET", "(setup) Slack App client_secret (prefer prompt)") { |v| options[:client_secret] = v }
+    o.on("--from PROFILE", "(migrate-emojis) Source profile to download emojis from") { |v| options[:from] = v }
+    o.on("--to PROFILE", "(migrate-emojis) Destination profile (used to derive admin URL)") { |v| options[:to] = v }
+    o.on("--out DIR", "(migrate-emojis) Output directory (default: ./emoji-export-<from>-<timestamp>)") { |v| options[:out] = v }
+    o.on("--filter REGEX", "(migrate-emojis) Only download emoji whose name matches REGEX (case-insensitive)") { |v| options[:filter] = v }
+    o.on("--no-open", "(migrate-emojis) Do not open the destination admin URL automatically") { options[:open_browser] = false }
     o.on("-h", "--help", "Show this help") { puts o; exit 0 }
   end
 
@@ -369,6 +379,125 @@ def run_doctor(options)
   end
 end
 
+def run_migrate_emojis(options)
+  require 'slack'
+  require 'emoji_migrator'
+  require 'time'
+
+  from = options[:from]
+  abort "migrate-emojis requires --from <profile>" if from.nil? || from.empty?
+  to = options[:to]
+
+  source_resolver = TokenResolver.new(
+    profile: from,
+    cli_token: nil,
+    config_path: options[:config_path],
+    verbose: options[:verbose],
+  )
+  source_token =
+    begin
+      source_resolver.resolve[:token]
+    rescue TokenResolver::NotFoundError => e
+      CliPrompt.fail("Could not resolve a token for source profile '#{from}'.")
+      e.message.each_line { |line| warn "   #{line.chomp}" }
+      exit 1
+    end
+
+  CliPrompt.step(1, 4, "Listing custom emojis on '#{from}'")
+  emoji_response =
+    begin
+      Slack.new(token: source_token, mode: :clear).emoji_list
+    rescue StandardError => e
+      CliPrompt.fail("emoji.list failed: #{CliPrompt.scrub_secrets(e.message)}")
+      exit 1
+    end
+
+  unless emoji_response["ok"]
+    case emoji_response["error"]
+    when "missing_scope"
+      CliPrompt.fail("Token for '#{from}' is missing the `emoji:read` scope.")
+      CliPrompt.info("Re-run setup to grant it:")
+      CliPrompt.info("  ruby slack_status.rb setup --profile #{from} --rotate")
+      CliPrompt.info("(The shipped manifest already declares the scope; re-installing the app re-prompts you for consent.)")
+    else
+      CliPrompt.fail("Slack rejected emoji.list: #{emoji_response["error"]}")
+    end
+    exit 1
+  end
+
+  emoji_map = emoji_response["emoji"] || {}
+  CliPrompt.done("Found #{emoji_map.size} entr#{emoji_map.size == 1 ? "y" : "ies"}.")
+
+  out_dir = options[:out] || "./emoji-export-#{from}-#{Time.now.strftime("%Y%m%d-%H%M%S")}"
+  CliPrompt.step(2, 4, "Downloading images to #{out_dir}")
+  migrator = EmojiMigrator.new(
+    emoji_map: emoji_map,
+    out_dir: out_dir,
+    filter: options[:filter],
+    logger: ->(msg) { CliPrompt.info(msg) },
+  ).run
+
+  CliPrompt.done(
+    "Downloaded #{migrator.downloaded.size} image#{migrator.downloaded.size == 1 ? "" : "s"} " \
+    "(#{format("%.1f KB", migrator.total_bytes / 1024.0)}), " \
+    "#{migrator.aliases.size} alias#{migrator.aliases.size == 1 ? "" : "es"} (see aliases.json), " \
+    "#{migrator.skipped.size} skipped."
+  )
+
+  admin_url = nil
+  if to && !to.empty?
+    CliPrompt.step(3, 4, "Resolving destination workspace from profile '#{to}'")
+    admin_url = resolve_admin_url(options, to)
+    if admin_url
+      CliPrompt.done("Destination emoji admin: #{admin_url}")
+    else
+      CliPrompt.skip("Could not derive destination admin URL; skipping browser step.")
+    end
+  end
+
+  CliPrompt.step(4, 4, "Next: bulk-upload to your destination workspace")
+  CliPrompt.manual(<<~MSG.strip, non_interactive: options[:non_interactive])
+    Slack does not expose an emoji-upload API for non-Enterprise workspaces,
+    so the last mile is a one-time drag-and-drop:
+
+      1. Open #{admin_url || "<your-workspace>.slack.com/customize/emoji"}
+      2. Click "Add Custom Emoji" -> "Upload Image".
+      3. Drag every image from:
+           #{File.expand_path(out_dir)}
+         (Slack's emoji admin accepts multi-file drag-and-drop.)
+      4. Aliases (see aliases.json in the same folder) must be recreated
+         manually: "Add Custom Emoji" -> "Add Alias".
+
+    Press Enter when you're done (or Ctrl-C to abort).
+  MSG
+
+  if admin_url && options[:open_browser]
+    open_in_browser(admin_url)
+  end
+end
+
+# Calls auth.test against the destination profile to derive
+# https://<team-subdomain>.slack.com/customize/emoji. Returns nil on any
+# failure (network, missing profile, rejected token) — caller treats that as
+# "skip the browser step".
+def resolve_admin_url(options, to_profile)
+  require 'slack'
+  resolver = TokenResolver.new(
+    profile: to_profile,
+    cli_token: nil,
+    config_path: options[:config_path],
+    verbose: options[:verbose],
+  )
+  token = resolver.resolve[:token]
+  response = Slack.new(token: token, mode: :clear).auth_test
+  return nil unless response["ok"]
+  url = response["url"].to_s.sub(/\/+\z/, "")
+  return nil if url.empty?
+  "#{url}/customize/emoji"
+rescue StandardError
+  nil
+end
+
 def doctor_hint(error_code)
   case error_code
   when "not_authed", "invalid_auth", "token_revoked"
@@ -476,6 +605,7 @@ if __FILE__ == $0
   when "doctor"         then run_doctor(options)
   when "config"         then run_config(ARGV, options)
   when "profiles"       then run_profiles(ARGV, options)
+  when "migrate-emojis" then run_migrate_emojis(options)
   else
     run_status_mode(command, ARGV, options)
   end
