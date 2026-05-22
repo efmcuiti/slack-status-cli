@@ -5,3 +5,9 @@ ruby "~> 3.0"
 # WEBrick was extracted from stdlib in Ruby 3.0; the OAuth helper boots a
 # one-shot listener on 127.0.0.1 to capture the Slack redirect.
 gem "webrick", "~> 1.8"
+
+group :test do
+  gem "rspec", "~> 3.13"
+  gem "webmock", "~> 3.23"
+  gem "simplecov", "~> 0.22", require: false
+end
