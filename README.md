@@ -30,6 +30,7 @@ Full prerequisites (Ruby 3, `nowplaying-cli`, optional `dcli` for Dashlane) live
 - [Examples](docs/examples.md) — copy-pasteable invocations.
 - [Troubleshooting](docs/troubleshooting.md) — notes, gotchas, `doctor` workflow, common Slack errors.
 - [Architecture](docs/architecture.md) — project structure, token-resolver design, future work.
+- [Project workflow](docs/project-workflow.md) — GitHub Project conventions: labels as canonical metadata, Status field, agent housekeeping steps, useful filters.
 
 ## Requirements
 
