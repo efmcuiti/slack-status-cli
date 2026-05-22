@@ -8,8 +8,9 @@ $LOAD_PATH.unshift(File.expand_path("../lib", __dir__))
 require "slack_status_cli"
 
 # Support modules and shared fakes land in T1.2 / T1.3 under spec/support/**.
-# The glob is harmless until they exist.
-Dir[File.expand_path("support/**/*.rb", __dir__)].sort.each { |file| require file }
+# The glob is harmless until they exist; the `*_spec.rb` exclusion stops RSpec
+# from registering co-located specs twice once they ship.
+Dir[File.expand_path("support/**/*.rb", __dir__)].reject { |file| file.end_with?("_spec.rb") }.sort.each { |file| require file }
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|
@@ -24,4 +25,7 @@ RSpec.configure do |config|
   config.disable_monkey_patching!
   config.order = :random
   Kernel.srand(config.seed)
+
+  config.include StdioCapture
+  config.include TmpConfig
 end
