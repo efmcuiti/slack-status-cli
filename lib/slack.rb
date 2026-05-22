@@ -179,7 +179,7 @@ class Slack
       },
       musical_myth: {
         text: format_tune,
-        emoji: ":musical_note:"
+        emoji: ":music:"
       }
     }
   end
