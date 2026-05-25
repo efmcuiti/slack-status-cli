@@ -35,11 +35,7 @@ RSpec.describe FakeSleeper do
       it "still records the call that raised so specs can assert the loop body ran" do
         sleeper.call(1)
         sleeper.call(2)
-        begin
-          sleeper.call(3)
-        rescue StopIteration
-          # expected — test the side effect, not the exception
-        end
+        expect { sleeper.call(3) }.to raise_error(StopIteration)
 
         expect(sleeper.calls).to eq([1, 2, 3])
       end
