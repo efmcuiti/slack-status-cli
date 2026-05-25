@@ -50,4 +50,16 @@ RSpec.describe FakeShellRunner do
       ])
     end
   end
+
+  describe "#stub" do
+    it "rejects a nil matcher so a typo cannot silently match every command" do
+      expect { runner.stub(nil, stdout: "anything") }
+        .to raise_error(ArgumentError, /matcher/)
+    end
+
+    it "rejects an empty-string matcher so a typo cannot silently match every command" do
+      expect { runner.stub("", stdout: "anything") }
+        .to raise_error(ArgumentError, /matcher/)
+    end
+  end
 end
