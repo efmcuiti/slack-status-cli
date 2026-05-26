@@ -11,10 +11,11 @@ RSpec.describe FakeSleeper do
       expect(sleeper.calls).to eq([10, 0.25])
     end
 
-    it "returns nil to mimic Kernel#sleep's contract" do
+    it "returns the requested seconds to mimic Kernel#sleep's return contract" do
       sleeper = described_class.new
 
-      expect(sleeper.call(5)).to be_nil
+      expect(sleeper.call(5)).to eq(5)
+      expect(sleeper.call(0.25)).to eq(0.25)
     end
 
     context "with raise_after: 3" do

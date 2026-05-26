@@ -11,8 +11,8 @@
 # `break`.
 #
 #   sleeper = FakeSleeper.new(raise_after: 3)
-#   sleeper.call(10)   # => nil, records 10
-#   sleeper.call(10)   # => nil, records 10
+#   sleeper.call(10)   # => 10, records 10
+#   sleeper.call(10)   # => 10, records 10
 #   sleeper.call(10)   # raises StopIteration (and still records 10)
 #   sleeper.call(10)   # raises StopIteration again (and still records 10)
 #   sleeper.calls      # => [10, 10, 10, 10]
@@ -28,6 +28,6 @@ class FakeSleeper
     @calls << seconds
     raise StopIteration if @raise_after && @calls.size >= @raise_after
 
-    nil
+    seconds
   end
 end
