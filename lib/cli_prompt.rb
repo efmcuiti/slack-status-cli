@@ -1,4 +1,5 @@
 require 'io/console'
+require 'slack_status_cli'
 
 # Standard interactive UX helpers shared by every CLI prompt in this tool.
 # Centralizing them keeps `[Y/n]` semantics, secret-input echo-off, and the
@@ -139,11 +140,10 @@ module CliPrompt
 
   # Scrubs Slack token shapes (xoxp-, xoxb-, xoxc-, xoxd-, xoxa-, xoxs-, xoxr-)
   # from any string so caught exceptions or response bodies don't accidentally
-  # log the secret.
-  SECRET_PATTERN = /\bxox[a-z]-[A-Za-z0-9-]+/
+  # log the secret. Thin delegation to the shared Callable so every pod sees
+  # an identical redaction shape.
   def scrub_secrets(text)
-    return text if text.nil?
-    text.to_s.gsub(SECRET_PATTERN) { |m| "xox?-#{redacted(m, keep: 4)}" }
+    SlackStatusCli::SecretScrubber.call(text: text)
   end
 
   def emoji(key)
