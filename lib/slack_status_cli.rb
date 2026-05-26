@@ -12,6 +12,7 @@ module SlackStatusCli
       autoload :StatusTextTrimmer, "slack_status_cli/slack/formatters/status_text_trimmer"
       autoload :TuneText, "slack_status_cli/slack/formatters/tune_text"
       autoload :NextInterval, "slack_status_cli/slack/formatters/next_interval"
+      autoload :StateLabel, "slack_status_cli/slack/formatters/state_label"
     end
   end
 end
