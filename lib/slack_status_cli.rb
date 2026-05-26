@@ -6,4 +6,10 @@
 module SlackStatusCli
   autoload :Callable, "slack_status_cli/callable"
   autoload :SecretScrubber, "slack_status_cli/secret_scrubber"
+
+  module Slack
+    module Formatters
+      autoload :StatusTextTrimmer, "slack_status_cli/slack/formatters/status_text_trimmer"
+    end
+  end
 end
