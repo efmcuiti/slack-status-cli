@@ -1,2 +1,5 @@
-# Plain Ruby factory helpers. Examples added by downstream tasks.
-# def build_tune(state: :playing, name: "...", artist: "..."); end
+module Factories
+  def build_tune(state: :playing, name: "Aurora", artist: "Phoenix", album: "Bankrupt!")
+    { state: state, name: name, artist: artist, album: album }
+  end
+end

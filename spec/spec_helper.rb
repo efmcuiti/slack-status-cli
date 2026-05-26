@@ -28,4 +28,5 @@ RSpec.configure do |config|
 
   config.include StdioCapture
   config.include TmpConfig
+  config.include Factories
 end
