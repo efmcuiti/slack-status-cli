@@ -45,7 +45,7 @@ class FakeShellRunner
   attr_reader :calls
 
   def stub(matcher, stdout: "", stderr: "", success: true)
-    raise ArgumentError, "FakeShellRunner stub matcher cannot be nil or empty" if matcher.nil? || matcher == ""
+    raise ArgumentError, "FakeShellRunner stub matcher cannot be nil or blank" if blank_matcher?(matcher)
 
     @stubs << Stub.new(matcher: matcher, stdout: stdout, stderr: stderr, success: success)
     self
@@ -58,5 +58,13 @@ class FakeShellRunner
     raise UnstubbedCommandError, "no FakeShellRunner stub matched: #{joined}" if stub.nil?
 
     [stub.stdout, stub.stderr, Status.new(stub.success)]
+  end
+
+  private
+
+  def blank_matcher?(matcher)
+    return false if matcher.is_a?(Regexp)
+
+    matcher.nil? || matcher.to_s.strip.empty?
   end
 end

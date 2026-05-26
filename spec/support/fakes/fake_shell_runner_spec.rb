@@ -61,5 +61,10 @@ RSpec.describe FakeShellRunner do
       expect { runner.stub("", stdout: "anything") }
         .to raise_error(ArgumentError, /matcher/)
     end
+
+    it "rejects a whitespace-only matcher so a typo cannot silently match every command" do
+      expect { runner.stub("   ", stdout: "anything") }
+        .to raise_error(ArgumentError, /matcher/)
+    end
   end
 end
