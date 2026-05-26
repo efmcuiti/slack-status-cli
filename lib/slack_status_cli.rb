@@ -13,6 +13,7 @@ module SlackStatusCli
       autoload :TuneText, "slack_status_cli/slack/formatters/tune_text"
       autoload :NextInterval, "slack_status_cli/slack/formatters/next_interval"
       autoload :StateLabel, "slack_status_cli/slack/formatters/state_label"
+      autoload :ResponseLogger, "slack_status_cli/slack/formatters/response_logger"
     end
   end
 end
