@@ -1,14 +1,25 @@
-# Real-fake replacement for `Open3` in specs that exercise shell-driven
-# collaborators (music detection, Dashlane/Keychain backends, etc.).
+# Spec-only collaborator for code paths that would otherwise call
+# `Open3.capture3` (music detection, Dashlane/Keychain backends, etc.). This
+# is **not** an `Open3` drop-in — it just happens to be call-compatible at the
+# surface (`#capture3(*argv)` matches `Open3.capture3(*argv)`'s signature), with
+# a deliberately different contract designed for spec ergonomics:
 #
-# Pods inject an instance via a `runner:` keyword and call `runner.capture3(...)`
-# instead of `Open3.capture3(...)`. Stubs are registered ahead of time and
-# matched against the joined argv; unmatched calls raise loudly so a missing
-# stub can never masquerade as a silently-empty shell response.
+#   - Stubs are registered ahead of time and matched against the joined argv
+#     (Regexp or non-empty String). Pods inject an instance via a `runner:`
+#     keyword and call `runner.capture3(...)` instead of `Open3.capture3(...)`.
+#   - Unmatched calls raise `UnstubbedCommandError` loudly so a missing stub
+#     can never masquerade as a silently-empty shell response — the opposite
+#     of `Open3.capture3`, which would actually spawn the process.
+#   - The returned status object only implements `#success?` (no `#exitstatus`,
+#     `#pid`, etc.); the real `Process::Status` surface isn't reproduced
+#     because no call site reads it. Add to `Status` if a downstream spec
+#     ever needs more.
+#   - Every `capture3` invocation is recorded in `#calls` as the argv array, so
+#     specs can assert what was shelled out to (and in what order).
 #
 #   runner = FakeShellRunner.new
 #   runner.stub(/osascript.*current track/, stdout: "Sirens|Cult of Luna|playing")
-#   runner.capture3("osascript", "-e", "...")  # => ["Sirens|Cult of Luna|playing", "", <success>]
+#   runner.capture3("osascript", "-e", "...")  # => ["Sirens|Cult of Luna|playing", "", <success?>]
 #   runner.calls                                # => [["osascript", "-e", "..."]]
 class FakeShellRunner
   UnstubbedCommandError = Class.new(StandardError)
