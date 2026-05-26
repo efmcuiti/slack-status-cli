@@ -11,7 +11,7 @@ RSpec.describe FakeSleeper do
       expect(sleeper.calls).to eq([10, 0.25])
     end
 
-    it "returns the requested seconds to mimic Kernel#sleep's return contract" do
+    it "echoes the requested seconds back so specs can assert what was scheduled" do
       sleeper = described_class.new
 
       expect(sleeper.call(5)).to eq(5)
