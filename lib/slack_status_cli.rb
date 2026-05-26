@@ -5,4 +5,5 @@
 # used by both `slack_status.rb` (the CLI dispatcher) and the spec_helper.
 module SlackStatusCli
   autoload :Callable, "slack_status_cli/callable"
+  autoload :SecretScrubber, "slack_status_cli/secret_scrubber"
 end
