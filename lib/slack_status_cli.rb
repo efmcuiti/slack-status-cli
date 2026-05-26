@@ -10,6 +10,7 @@ module SlackStatusCli
   module Slack
     module Formatters
       autoload :StatusTextTrimmer, "slack_status_cli/slack/formatters/status_text_trimmer"
+      autoload :TuneText, "slack_status_cli/slack/formatters/tune_text"
     end
   end
 end
