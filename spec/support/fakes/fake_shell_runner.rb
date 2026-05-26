@@ -4,9 +4,11 @@
 # surface (`#capture3(*argv)` matches `Open3.capture3(*argv)`'s signature), with
 # a deliberately different contract designed for spec ergonomics:
 #
-#   - Stubs are registered ahead of time and matched against the joined argv
-#     (Regexp or non-empty String). Pods inject an instance via a `runner:`
-#     keyword and call `runner.capture3(...)` instead of `Open3.capture3(...)`.
+#   - Stubs are registered ahead of time and matched against the joined argv.
+#     A matcher is a `Regexp` (matched via `Regexp#match?`) or any object whose
+#     `.to_s.strip` is non-blank (matched as a substring of the joined argv —
+#     typically a String). Pods inject an instance via a `runner:` keyword and
+#     call `runner.capture3(...)` instead of `Open3.capture3(...)`.
 #   - Unmatched calls raise `UnstubbedCommandError` loudly so a missing stub
 #     can never masquerade as a silently-empty shell response — the opposite
 #     of `Open3.capture3`, which would actually spawn the process.
