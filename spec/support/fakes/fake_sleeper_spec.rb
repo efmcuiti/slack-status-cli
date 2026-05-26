@@ -40,6 +40,16 @@ RSpec.describe FakeSleeper do
 
         expect(sleeper.calls).to eq([1, 2, 3])
       end
+
+      it "keeps raising and recording on calls after the Nth (tripwire stays tripped)" do
+        sleeper.call(1)
+        sleeper.call(2)
+        expect { sleeper.call(3) }.to raise_error(StopIteration)
+        expect { sleeper.call(4) }.to raise_error(StopIteration)
+        expect { sleeper.call(5) }.to raise_error(StopIteration)
+
+        expect(sleeper.calls).to eq([1, 2, 3, 4, 5])
+      end
     end
   end
 end
