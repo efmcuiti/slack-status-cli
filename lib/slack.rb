@@ -2,6 +2,7 @@ require 'music'
 require 'net/http'
 require 'json'
 require 'uri'
+require 'slack_status_cli'
 
 class Slack
   MYTH_MOJIS = [":wolf:", ":lion_face:", ":phoenix_ash:", ":fox_face:", ":butterfly:"]
@@ -252,14 +253,7 @@ class Slack
   end
 
   def body_excerpt(body, limit: 200)
-    snippet = scrub(body.strip)
+    snippet = SlackStatusCli::SecretScrubber.call(text: body.strip)
     snippet.length > limit ? "#{snippet[0, limit]}…" : snippet
-  end
-
-  # Defense-in-depth: even though Slack's responses don't echo the token,
-  # scrub any `xox?-` pattern before printing so a future log statement
-  # can't accidentally leak a secret.
-  def scrub(text)
-    text.to_s.gsub(/\bxox[a-z]-[A-Za-z0-9-]+/) { |m| "xox?-…#{m[-4, 4]}" }
   end
 end
