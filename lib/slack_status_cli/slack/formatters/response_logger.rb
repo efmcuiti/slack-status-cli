@@ -64,7 +64,7 @@ module SlackStatusCli
         end
 
         def body_excerpt(body)
-          snippet = SecretScrubber.call(text: body.strip)
+          snippet = SlackStatusCli::SecretScrubber.call(text: body.strip)
           snippet.length > BODY_EXCERPT_LIMIT ? "#{snippet[0, BODY_EXCERPT_LIMIT]}…" : snippet
         end
       end
