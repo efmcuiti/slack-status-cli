@@ -33,6 +33,16 @@ RSpec.describe SlackStatusCli::Slack::Formatters::TuneText do
       end
     end
 
+    context "when tune is missing or malformed" do
+      it "returns an empty string when tune is nil (errored tick)" do
+        expect(described_class.call(tune: nil)).to eq("")
+      end
+
+      it "returns an empty string when tune is not a Hash" do
+        expect(described_class.call(tune: "unexpected")).to eq("")
+      end
+    end
+
     it "draws each myth emoji from a non-empty constant of slack-style codes" do
       expect(described_class::MYTH_MOJIS).to all(match(/\A:[a-z_]+:\z/))
       expect(described_class::MYTH_MOJIS).not_to be_empty
