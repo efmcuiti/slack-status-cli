@@ -44,6 +44,23 @@ RSpec.describe SlackStatusCli::Slack::Formatters::StatusTextTrimmer do
       expect(result).to eq("supercali…")
     end
 
+    it "omits the ellipsis when max_len cannot fit it so output never exceeds max_len" do
+      result = described_class.call(text: "alpha beta gamma", max_len: 2, ellipsis: "...")
+
+      expect(result).to eq("al")
+      expect(result.grapheme_clusters.length).to be <= 2
+    end
+
+    it "returns an empty string when max_len is zero rather than a lone ellipsis" do
+      expect(described_class.call(text: "alpha beta gamma", max_len: 0)).to eq("")
+    end
+
+    it "never returns more grapheme clusters than max_len even with a long ellipsis" do
+      result = described_class.call(text: "supercalifragilistic", max_len: 3, ellipsis: "[more]")
+
+      expect(result.grapheme_clusters.length).to be <= 3
+    end
+
     it "counts grapheme clusters so emoji do not get sliced mid-sequence" do
       text = "🐺🦁🔥🦊🦋 myth herd on the move"
       result = described_class.call(text: text, max_len: 7)
