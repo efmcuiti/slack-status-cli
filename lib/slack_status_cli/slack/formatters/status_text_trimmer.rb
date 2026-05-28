@@ -3,7 +3,8 @@ module SlackStatusCli
     module Formatters
       # Trims a status text down to `max_len` grapheme clusters, appending
       # `ellipsis` when truncation happens. Blank/short input is returned
-      # unchanged. Cuts at the last whitespace inside the slice when possible,
+      # unchanged (nil normalizes to ""), so the return value is always a
+      # String. Cuts at the last whitespace inside the slice when possible,
       # otherwise falls back to a hard cut.
       class StatusTextTrimmer
         extend Callable
@@ -15,7 +16,7 @@ module SlackStatusCli
         end
 
         def call
-          return text if text.to_s.strip.empty? || text.grapheme_clusters.length <= max_len
+          return text.to_s if text.to_s.strip.empty? || text.grapheme_clusters.length <= max_len
 
           hard_limit = [max_len - ellipsis.grapheme_clusters.length, 0].max
           slice = text.grapheme_clusters.first(hard_limit).join

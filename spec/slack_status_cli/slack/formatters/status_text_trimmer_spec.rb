@@ -19,6 +19,13 @@ RSpec.describe SlackStatusCli::Slack::Formatters::StatusTextTrimmer do
       expect(described_class.call(text: "   ")).to eq("   ")
     end
 
+    it "normalizes nil input to an empty string so callers always get a String" do
+      result = described_class.call(text: nil)
+
+      expect(result).to eq("")
+      expect(result).to be_a(String)
+    end
+
     it "truncates with the default ellipsis when longer than max_len" do
       result = described_class.call(text: "alpha beta gamma delta", max_len: 12)
 
