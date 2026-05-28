@@ -27,6 +27,15 @@ RSpec.describe SlackStatusCli::Slack::Formatters::ResponseLogger do
         expect(output.string).to include("❌ Failed to update status: invalid_auth")
       end
 
+      it "scrubs Slack tokens from the ok=false error string so they never reach logs" do
+        response = fake_response(code: 200, body: { ok: false, error: "leaked xoxp-abcd1234efgh" }.to_json)
+
+        described_class.call(response: response, output: output)
+
+        expect(output.string).not_to include("xoxp-abcd1234efgh")
+        expect(output.string).to include("xox?-…efgh")
+      end
+
       it "warns when the body is empty so a tick can be safely skipped" do
         response = fake_response(code: 200, body: "")
 

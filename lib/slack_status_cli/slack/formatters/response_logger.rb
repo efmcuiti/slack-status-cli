@@ -46,7 +46,7 @@ module SlackStatusCli
           if parsed["ok"]
             output.puts "✅ Slack status updated!"
           else
-            output.puts "❌ Failed to update status: #{parsed["error"]}"
+            output.puts "❌ Failed to update status: #{SlackStatusCli::SecretScrubber.call(text: parsed["error"])}"
           end
         end
 
