@@ -15,5 +15,9 @@ module SlackStatusCli
       autoload :StateLabel, "slack_status_cli/slack/formatters/state_label"
       autoload :ResponseLogger, "slack_status_cli/slack/formatters/response_logger"
     end
+
+    module Builders
+      autoload :ExpirationSeconds, "slack_status_cli/slack/builders/expiration_seconds"
+    end
   end
 end
