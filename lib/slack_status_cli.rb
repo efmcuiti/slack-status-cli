@@ -19,6 +19,7 @@ module SlackStatusCli
     module Builders
       autoload :ExpirationSeconds, "slack_status_cli/slack/builders/expiration_seconds"
       autoload :ModeStatus, "slack_status_cli/slack/builders/mode_status"
+      autoload :StatusPayload, "slack_status_cli/slack/builders/status_payload"
     end
   end
 end
