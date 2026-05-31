@@ -24,6 +24,7 @@ module SlackStatusCli
 
     module Http
       autoload :GetRequest, "slack_status_cli/slack/http/get_request"
+      autoload :PostRequest, "slack_status_cli/slack/http/post_request"
     end
   end
 end
