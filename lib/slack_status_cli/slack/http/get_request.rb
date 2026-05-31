@@ -20,8 +20,8 @@ module SlackStatusCli
         end
 
         def call
-          response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
-            http.request(request)
+          response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |https|
+            https.request(request)
           end
 
           unless response.is_a?(Net::HTTPSuccess)
