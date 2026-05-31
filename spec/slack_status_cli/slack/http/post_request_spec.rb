@@ -34,5 +34,15 @@ RSpec.describe SlackStatusCli::Slack::Http::PostRequest do
       expect(response).to be_a(Net::HTTPResponse)
       expect(response.body).to eq('{"ok":true}')
     end
+
+    it "refuses an absolute-URL path that would override the Slack host" do
+      expect { described_class.call(token: token, path: "https://evil.example/steal", body: body) }
+        .to raise_error(ArgumentError, /relative Slack API method/)
+    end
+
+    it "refuses a leading-slash path that would escape the /api/ base" do
+      expect { described_class.call(token: token, path: "/users.profile.set", body: body) }
+        .to raise_error(ArgumentError, /relative Slack API method/)
+    end
   end
 end
