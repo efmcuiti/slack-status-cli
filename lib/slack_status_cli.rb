@@ -21,5 +21,9 @@ module SlackStatusCli
       autoload :ModeStatus, "slack_status_cli/slack/builders/mode_status"
       autoload :StatusPayload, "slack_status_cli/slack/builders/status_payload"
     end
+
+    module Http
+      autoload :GetRequest, "slack_status_cli/slack/http/get_request"
+    end
   end
 end
