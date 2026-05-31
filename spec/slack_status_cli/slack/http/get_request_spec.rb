@@ -38,5 +38,15 @@ RSpec.describe SlackStatusCli::Slack::Http::GetRequest do
       expect { described_class.call(token: token, path: "auth.test") }
         .to raise_error(Errno::ECONNREFUSED)
     end
+
+    it "refuses an absolute-URL path that would override the Slack host" do
+      expect { described_class.call(token: token, path: "https://evil.example/steal") }
+        .to raise_error(ArgumentError, /relative Slack API method/)
+    end
+
+    it "refuses a leading-slash path that would escape the /api/ base" do
+      expect { described_class.call(token: token, path: "/auth.test") }
+        .to raise_error(ArgumentError, /relative Slack API method/)
+    end
   end
 end

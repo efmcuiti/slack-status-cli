@@ -13,6 +13,7 @@ module SlackStatusCli
         extend Callable
 
         BASE_URL = "https://slack.com/api/".freeze
+        ABSOLUTE_PATH = %r{\A(?:[a-z][a-z0-9+.-]*:)?//|\A/}i.freeze
 
         def initialize(token:, path:)
           @token = token
@@ -35,8 +36,16 @@ module SlackStatusCli
 
         attr_reader :token, :path
 
+        # Append the API method to the fixed base by string concatenation so a
+        # caller-supplied `path` can never replace the host and leak the bearer
+        # token elsewhere. Absolute or scheme-relative paths are a programming
+        # error, so we raise loudly rather than silently rewriting intent.
         def uri
-          URI.join(BASE_URL, path)
+          if ABSOLUTE_PATH.match?(path.to_s)
+            raise ArgumentError, "path must be a relative Slack API method, got: #{path.inspect}"
+          end
+
+          URI("#{BASE_URL}#{path}")
         end
 
         def request
