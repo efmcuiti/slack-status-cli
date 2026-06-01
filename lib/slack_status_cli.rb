@@ -26,5 +26,15 @@ module SlackStatusCli
       autoload :GetRequest, "slack_status_cli/slack/http/get_request"
       autoload :PostRequest, "slack_status_cli/slack/http/post_request"
     end
+
+    module Queries
+      autoload :AuthTest, "slack_status_cli/slack/queries/auth_test"
+      autoload :EmojiList, "slack_status_cli/slack/queries/emoji_list"
+    end
+
+    module Commands
+      autoload :SetStatus, "slack_status_cli/slack/commands/set_status"
+      autoload :ClearStatus, "slack_status_cli/slack/commands/clear_status"
+    end
   end
 end
