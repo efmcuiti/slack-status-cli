@@ -31,5 +31,9 @@ module SlackStatusCli
       autoload :AuthTest, "slack_status_cli/slack/queries/auth_test"
       autoload :EmojiList, "slack_status_cli/slack/queries/emoji_list"
     end
+
+    module Commands
+      autoload :SetStatus, "slack_status_cli/slack/commands/set_status"
+    end
   end
 end
