@@ -34,6 +34,7 @@ module SlackStatusCli
 
     module Commands
       autoload :SetStatus, "slack_status_cli/slack/commands/set_status"
+      autoload :ClearStatus, "slack_status_cli/slack/commands/clear_status"
     end
   end
 end
