@@ -51,5 +51,15 @@ RSpec.describe SlackStatusCli::Music::Queries::NowPlaying do
 
       expect(described_class.call(runner: runner)).to eq(null_track)
     end
+
+    it "returns NULL_TRACK when nowplaying-cli is not installed" do
+      missing_runner = Class.new do
+        def capture3(*)
+          raise Errno::ENOENT, "nowplaying-cli"
+        end
+      end.new
+
+      expect(described_class.call(runner: missing_runner)).to eq(null_track)
+    end
   end
 end

@@ -22,7 +22,12 @@ module SlackStatusCli
         def call
           stdout, _stderr, status = runner.capture3(*COMMAND)
           return null_track unless status.success?
-
+        rescue Errno::ENOENT
+          # `nowplaying-cli` is not installed / not on PATH. Degrade to a
+          # silent tune instead of crashing the caller (the loop keeps
+          # ticking; the AppleScript fallback may still find a track).
+          null_track
+        else
           payload = parse_json(stdout)
           return null_track if payload.nil?
 
