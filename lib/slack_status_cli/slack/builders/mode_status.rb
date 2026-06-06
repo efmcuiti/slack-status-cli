@@ -2,9 +2,10 @@ module SlackStatusCli
   module Slack
     module Builders
       # Maps a mode symbol to the status triple Slack expects: text, emoji, and
-      # an optional absolute-epoch expiration. Time-bound modes (lunch/break)
-      # compute their expiration from the injected `now:` so specs stay
-      # deterministic. Unknown modes raise rather than silently returning nil.
+      # an optional expiration. Time-bound modes (lunch/break) return a relative
+      # seconds-from-now offset; Builders::ExpirationSeconds resolves it to an
+      # absolute epoch at send time. Unknown modes raise rather than silently
+      # returning nil.
       class ModeStatus
         extend Callable
 
@@ -12,9 +13,8 @@ module SlackStatusCli
         LUNCH_SECONDS = 3600
         BREAK_SECONDS = 1800
 
-        def initialize(mode:, now: Time.now)
+        def initialize(mode:)
           @mode = mode
-          @now = now
         end
 
         def call
@@ -24,9 +24,9 @@ module SlackStatusCli
           when :musical_myth
             { text: "", emoji: ":music:", expiration: nil }
           when :lunch
-            { text: "#{MYTH_MOJIS.sample} - Lunch time!", emoji: ":meat_on_bone:", expiration: now.to_i + LUNCH_SECONDS }
+            { text: "#{MYTH_MOJIS.sample} - Lunch time!", emoji: ":meat_on_bone:", expiration: LUNCH_SECONDS }
           when :break
-            { text: "#{MYTH_MOJIS.sample} Taking a break", emoji: ":coffee:", expiration: now.to_i + BREAK_SECONDS }
+            { text: "#{MYTH_MOJIS.sample} Taking a break", emoji: ":coffee:", expiration: BREAK_SECONDS }
           else
             raise ArgumentError, "Unknown mode: #{mode.inspect}"
           end
@@ -34,7 +34,7 @@ module SlackStatusCli
 
         private
 
-        attr_reader :mode, :now
+        attr_reader :mode
       end
     end
   end

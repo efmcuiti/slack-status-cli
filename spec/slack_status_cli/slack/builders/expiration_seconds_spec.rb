@@ -5,14 +5,14 @@ RSpec.describe SlackStatusCli::Slack::Builders::ExpirationSeconds do
     let(:now) { Time.at(1_700_000_000) }
 
     context "with a plain integer string" do
-      it "returns the integer parsed as an absolute epoch" do
-        expect(described_class.call(value: "1700000000", now: now)).to eq(1_700_000_000)
+      it "treats it as relative seconds-from-now and returns now + the value" do
+        expect(described_class.call(value: "3600", now: now)).to eq(now.to_i + 3600)
       end
     end
 
     context "with an integer value" do
-      it "returns the integer as an absolute epoch" do
-        expect(described_class.call(value: 1_700_000_000, now: now)).to eq(1_700_000_000)
+      it "treats it as relative seconds-from-now and returns now + the value" do
+        expect(described_class.call(value: 3600, now: now)).to eq(now.to_i + 3600)
       end
     end
 

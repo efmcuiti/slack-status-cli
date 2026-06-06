@@ -30,10 +30,10 @@ RSpec.describe SlackStatusCli::Slack::Builders::StatusPayload do
       expect(profile(json)["status_expiration"]).to eq(now.to_i + (30 * 60))
     end
 
-    it "passes an absolute epoch expiration through unchanged" do
-      json = described_class.call(text: "", emoji: "", expiration: "1700000000", now: now)
+    it "resolves a bare integer expiration as relative seconds-from-now" do
+      json = described_class.call(text: "", emoji: "", expiration: "3600", now: now)
 
-      expect(profile(json)["status_expiration"]).to eq(1_700_000_000)
+      expect(profile(json)["status_expiration"]).to eq(now.to_i + 3600)
     end
   end
 end

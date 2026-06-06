@@ -2,7 +2,8 @@ module SlackStatusCli
   module Slack
     module Commands
       # Clears the Slack user status by delegating to SetStatus with an empty
-      # text/emoji and a zero expiration, which Slack interprets as "no status".
+      # text/emoji and no expiration (nil), which StatusPayload renders as the
+      # zero expiration Slack interprets as "no status".
       class ClearStatus
         extend Callable
 
@@ -12,7 +13,7 @@ module SlackStatusCli
         end
 
         def call
-          SetStatus.call(token: token, text: "", emoji: "", expiration: 0, output: output)
+          SetStatus.call(token: token, text: "", emoji: "", expiration: nil, output: output)
         end
 
         private
