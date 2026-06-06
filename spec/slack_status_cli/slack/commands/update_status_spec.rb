@@ -44,8 +44,20 @@ RSpec.describe SlackStatusCli::Slack::Commands::UpdateStatus do
       )
     end
 
-    it "clears the status for an unknown mode (same result as :clear)" do
-      expect(clear_status).to receive(:call).with(token: token, output: output)
+    it "sets a custom freeform status from the explicit args for an unknown mode" do
+      expect(set_status).to receive(:call).with(
+        token: token, text: "Deep in the code", emoji: ":fire:", expiration: "3600", output: output
+      )
+
+      described_class.call(
+        token: token, mode: :custom, text: "Deep in the code", emoji: ":fire:", expiration: "3600", output: output
+      )
+    end
+
+    it "falls back to an empty status for an unknown mode given no args" do
+      expect(set_status).to receive(:call).with(
+        token: token, text: "", emoji: "", expiration: nil, output: output
+      )
 
       described_class.call(token: token, mode: :bogus, output: output)
     end
