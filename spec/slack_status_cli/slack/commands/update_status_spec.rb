@@ -46,11 +46,11 @@ RSpec.describe SlackStatusCli::Slack::Commands::UpdateStatus do
 
     it "sets a custom freeform status from the explicit args for an unknown mode" do
       expect(set_status).to receive(:call).with(
-        token: token, text: "Deep in the code", emoji: ":fire:", expiration: "3600", output: output
+        token: token, text: "Deep in the code", emoji: ":fire:", expiration: "1h", output: output
       )
 
       described_class.call(
-        token: token, mode: :custom, text: "Deep in the code", emoji: ":fire:", expiration: "3600", output: output
+        token: token, mode: :custom, text: "Deep in the code", emoji: ":fire:", expiration: "1h", output: output
       )
     end
 

@@ -5,7 +5,7 @@ module SlackStatusCli
     module Builders
       # Builds the JSON body for Slack's users.profile.set. Composes
       # ExpirationSeconds so callers can pass a raw expiration input ("30m",
-      # an epoch string, or nil); a nil resolution becomes 0, which Slack
+      # seconds-from-now, or nil); a nil resolution becomes 0, which Slack
       # interprets as "no expiration".
       class StatusPayload
         extend Callable

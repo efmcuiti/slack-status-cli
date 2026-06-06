@@ -22,7 +22,7 @@ module SlackStatusCli
         def call
           tune = enriched_tune
           text = Formatters::StatusTextTrimmer.call(text: Formatters::TuneText.call(tune: tune))
-          SetStatus.call(token: token, text: text, emoji: STATUS_EMOJI, expiration: 0, output: output) unless text.empty?
+          SetStatus.call(token: token, text: text, emoji: STATUS_EMOJI, expiration: nil, output: output) unless text.empty?
           tune
         end
 

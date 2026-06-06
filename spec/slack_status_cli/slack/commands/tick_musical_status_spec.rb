@@ -16,7 +16,7 @@ RSpec.describe SlackStatusCli::Slack::Commands::TickMusicalStatus do
         token: token,
         text: a_string_including("Sirens"),
         emoji: ":music:",
-        expiration: 0,
+        expiration: nil,
         output: output
       )
 

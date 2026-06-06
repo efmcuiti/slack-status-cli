@@ -22,7 +22,7 @@ RSpec.describe SlackStatusCli::Slack::Commands::ClearStatus do
 
     it "delegates to SetStatus with the empty-status arguments" do
       expect(SlackStatusCli::Slack::Commands::SetStatus)
-        .to receive(:call).with(token: token, text: "", emoji: "", expiration: 0, output: output)
+        .to receive(:call).with(token: token, text: "", emoji: "", expiration: nil, output: output)
 
       described_class.call(token: token, output: output)
     end
