@@ -31,7 +31,7 @@ module SlackStatusCli
         attr_reader :token, :sleeper, :tick, :output
 
         def safe_tick
-          tick.call(token: token)
+          tick.call(token: token, output: output)
         rescue StandardError => e
           output.puts "⚠️  Tick failed: #{e.class}: #{e.message} — will retry next cycle."
           nil
