@@ -37,4 +37,15 @@ module SlackStatusCli
       autoload :ClearStatus, "slack_status_cli/slack/commands/clear_status"
     end
   end
+
+  module Music
+    autoload :Constants, "slack_status_cli/music/constants"
+
+    module Queries
+      autoload :NowPlaying, "slack_status_cli/music/queries/now_playing"
+      autoload :AppleMusicFallback, "slack_status_cli/music/queries/apple_music_fallback"
+      autoload :TuneState, "slack_status_cli/music/queries/tune_state"
+      autoload :CurrentTrack, "slack_status_cli/music/queries/current_track"
+    end
+  end
 end
