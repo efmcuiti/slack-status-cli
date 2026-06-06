@@ -7,6 +7,7 @@ require 'optparse'
 
 require 'cli_prompt'
 require 'token_resolver'
+require 'slack_status_cli'
 
 RESERVED_MODES = %i[myth lunch break clear musical_myth].freeze
 SUBCOMMANDS    = %w[setup doctor config profiles].freeze
@@ -73,8 +74,6 @@ def build_resolver(options)
 end
 
 def run_status_mode(command, rest_args, options)
-  require 'slack'
-
   mode = command&.to_sym
   if mode == :musical_myth
     text = nil
@@ -96,19 +95,18 @@ def run_status_mode(command, rest_args, options)
       exit 1
     end
 
-  slack = Slack.new(
-    token: token_info[:token],
+  token = token_info[:token]
+  install_signal_handlers(token)
+  SlackStatusCli::Slack::Commands::UpdateStatus.call(
+    token: token,
     mode: mode,
     text: text,
     emoji: emoji,
     expiration: expiration,
   )
-
-  install_signal_handlers(slack)
-  slack.update_status
 end
 
-def install_signal_handlers(slack)
+def install_signal_handlers(token)
   shutdown_requested = false
   %w[INT TERM].each do |sig|
     trap(sig) do
@@ -118,9 +116,9 @@ def install_signal_handlers(slack)
   end
 
   at_exit do
-    next unless shutdown_requested && slack
+    next unless shutdown_requested && token
     puts "\nStopping Slack client… sending goodbye to Music ❤️"
-    slack.clear_status
+    SlackStatusCli::Slack::Commands::ClearStatus.call(token: token)
   end
 end
 
@@ -344,8 +342,6 @@ def redacted_token(token)
 end
 
 def run_doctor(options)
-  require 'slack'
-
   resolver = build_resolver(options)
   token_info =
     begin
@@ -360,10 +356,9 @@ def run_doctor(options)
   CliPrompt.info("profile: #{token_info[:profile]}")
   CliPrompt.info("token  : #{redacted_token(token_info[:token])}")
 
-  slack = Slack.new(token: token_info[:token], mode: :clear)
   response =
     begin
-      slack.auth_test
+      SlackStatusCli::Slack::Queries::AuthTest.call(token: token_info[:token])
     rescue StandardError => e
       CliPrompt.fail("auth.test failed: #{CliPrompt.scrub_secrets(e.message)}")
       exit 1
@@ -380,7 +375,6 @@ def run_doctor(options)
 end
 
 def run_migrate_emojis(options)
-  require 'slack'
   require 'emoji_migrator'
   require 'time'
 
@@ -406,7 +400,7 @@ def run_migrate_emojis(options)
   CliPrompt.step(1, 4, "Listing custom emojis on '#{from}'")
   emoji_response =
     begin
-      Slack.new(token: source_token, mode: :clear).emoji_list
+      SlackStatusCli::Slack::Queries::EmojiList.call(token: source_token)
     rescue StandardError => e
       CliPrompt.fail("emoji.list failed: #{CliPrompt.scrub_secrets(e.message)}")
       exit 1
@@ -481,7 +475,6 @@ end
 # failure (network, missing profile, rejected token) — caller treats that as
 # "skip the browser step".
 def resolve_admin_url(options, to_profile)
-  require 'slack'
   resolver = TokenResolver.new(
     profile: to_profile,
     cli_token: nil,
@@ -489,7 +482,7 @@ def resolve_admin_url(options, to_profile)
     verbose: options[:verbose],
   )
   token = resolver.resolve[:token]
-  response = Slack.new(token: token, mode: :clear).auth_test
+  response = SlackStatusCli::Slack::Queries::AuthTest.call(token: token)
   return nil unless response["ok"]
   url = response["url"].to_s.sub(/\/+\z/, "")
   return nil if url.empty?
