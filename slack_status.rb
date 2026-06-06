@@ -74,7 +74,9 @@ def build_resolver(options)
 end
 
 def run_status_mode(command, rest_args, options)
-  mode = command&.to_sym
+  # No command at all defaults to the `myth` mode (see docs/usage.md); an
+  # explicit-but-unrecognized command falls through as a custom status.
+  mode = command&.to_sym || :myth
   if mode == :musical_myth
     text = nil
     emoji = nil
