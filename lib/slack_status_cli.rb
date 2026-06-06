@@ -35,6 +35,9 @@ module SlackStatusCli
     module Commands
       autoload :SetStatus, "slack_status_cli/slack/commands/set_status"
       autoload :ClearStatus, "slack_status_cli/slack/commands/clear_status"
+      autoload :TickMusicalStatus, "slack_status_cli/slack/commands/tick_musical_status"
+      autoload :RunMusicalLoop, "slack_status_cli/slack/commands/run_musical_loop"
+      autoload :UpdateStatus, "slack_status_cli/slack/commands/update_status"
     end
   end
 
