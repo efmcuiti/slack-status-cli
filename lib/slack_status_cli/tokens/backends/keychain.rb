@@ -39,13 +39,15 @@ module SlackStatusCli
         end
 
         def write(token)
-          _stdout, stderr, status = runner.capture3(
+          stdout, stderr, status = runner.capture3(
             "security", "add-generic-password",
             "-s", service, "-a", account, "-w", token, "-U"
           )
           return if status.success?
 
-          raise Errors::WriteError, "security add-generic-password failed: #{stderr.to_s.strip}"
+          detail = stderr.to_s.strip
+          detail = stdout.to_s.strip if detail.empty?
+          raise Errors::WriteError, "security add-generic-password failed: #{detail}"
         rescue Errno::ENOENT
           raise Errors::WriteError, "`security` not found in PATH; Keychain backend requires macOS."
         end

@@ -70,6 +70,13 @@ RSpec.describe SlackStatusCli::Tokens::Backends::Keychain do
         .to raise_error(SlackStatusCli::Tokens::Errors::WriteError, /write denied/)
     end
 
+    it "falls back to stdout in the WriteError when stderr is blank" do
+      runner.stub(/security/, stdout: "errSecDuplicateItem", stderr: "", success: false)
+
+      expect { build.write("xoxp-new") }
+        .to raise_error(SlackStatusCli::Tokens::Errors::WriteError, /errSecDuplicateItem/)
+    end
+
     it "raises WriteError when the security binary is missing" do
       backend = described_class.new(profile: "work", runner: runner_raising(Errno::ENOENT))
 
