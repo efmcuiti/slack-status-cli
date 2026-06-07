@@ -2,9 +2,10 @@ module SlackStatusCli
   module Tokens
     module Backends
       # Reads a Slack token from an environment variable, default
-      # `SLACK_STATUS_TOKEN_<PROFILE>` (profile upcased, non-alphanumerics
-      # collapsed to `_`). Env vars can't be persisted from a child process, so
-      # `#write` raises ManualWriteRequired with shell-export instructions.
+      # `SLACK_STATUS_TOKEN_<PROFILE>` (profile upcased, with each
+      # non-alphanumeric character replaced by a single `_`). Env vars can't be
+      # persisted from a child process, so `#write` raises ManualWriteRequired
+      # with shell-export instructions.
       class Env < Base
         def read
           key = env_key
