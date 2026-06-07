@@ -46,6 +46,7 @@ module SlackStatusCli
 
     module Backends
       autoload :Base, "slack_status_cli/tokens/backends/base"
+      autoload :Dashlane, "slack_status_cli/tokens/backends/dashlane"
     end
   end
 
