@@ -43,6 +43,10 @@ module SlackStatusCli
 
   module Tokens
     autoload :Errors, "slack_status_cli/tokens/errors"
+
+    module Backends
+      autoload :Base, "slack_status_cli/tokens/backends/base"
+    end
   end
 
   module Music
