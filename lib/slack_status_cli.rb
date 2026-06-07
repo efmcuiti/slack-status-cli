@@ -41,6 +41,10 @@ module SlackStatusCli
     end
   end
 
+  module Tokens
+    autoload :Errors, "slack_status_cli/tokens/errors"
+  end
+
   module Music
     autoload :Constants, "slack_status_cli/music/constants"
 
