@@ -12,7 +12,7 @@ Issue labels carry all pod/size/phase/type/tdd metadata. The **Project** sidebar
 | `size:` | `size:s` | PR size estimate (s / m / l) |
 | `phase:` | `phase:extraction` | Refactor phase (bootstrap / foundation / extraction / cleanup) |
 | `type:` | `type:task` | Granularity: `type:epic` vs `type:task` |
-| `tdd:` | `tdd:red-gate` | Has at least one `/pi-dev` shipit gate |
+| `tdd:` | `tdd:red-gate` | Has at least one `/ruby-dev` shipit gate |
 
 **Do not recreate Pod, Size, or Phase as custom project fields.** They duplicate labels and will drift out of sync because GitHub does not link labels to custom field values.
 
