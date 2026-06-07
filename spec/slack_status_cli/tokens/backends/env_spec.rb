@@ -14,6 +14,15 @@ RSpec.describe SlackStatusCli::Tokens::Backends::Env do
     had ? ENV[key] = old : ENV.delete(key)
   end
 
+  def without_env(key)
+    had = ENV.key?(key)
+    old = ENV[key]
+    ENV.delete(key)
+    yield
+  ensure
+    ENV[key] = old if had
+  end
+
   describe "#read" do
     it "returns the profile-scoped env var, stripped" do
       with_env("SLACK_STATUS_TOKEN_WORK", "  xoxp-from-env  ") do
@@ -22,11 +31,12 @@ RSpec.describe SlackStatusCli::Tokens::Backends::Env do
     end
 
     it "returns nil and records last_error when the env var is unset" do
-      ENV.delete("SLACK_STATUS_TOKEN_WORK")
-      backend = build(profile: "work")
+      without_env("SLACK_STATUS_TOKEN_WORK") do
+        backend = build(profile: "work")
 
-      expect(backend.read).to be_nil
-      expect(backend.last_error).to match(/SLACK_STATUS_TOKEN_WORK/)
+        expect(backend.read).to be_nil
+        expect(backend.last_error).to match(/SLACK_STATUS_TOKEN_WORK/)
+      end
     end
 
     it "returns nil when the env var is set but blank" do
