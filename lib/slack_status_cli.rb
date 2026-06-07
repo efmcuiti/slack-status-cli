@@ -49,6 +49,7 @@ module SlackStatusCli
       autoload :Dashlane, "slack_status_cli/tokens/backends/dashlane"
       autoload :Keychain, "slack_status_cli/tokens/backends/keychain"
       autoload :File, "slack_status_cli/tokens/backends/file"
+      autoload :Env, "slack_status_cli/tokens/backends/env"
     end
   end
 
