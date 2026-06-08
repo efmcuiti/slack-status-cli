@@ -43,6 +43,16 @@ module SlackStatusCli
 
   module Tokens
     autoload :Errors, "slack_status_cli/tokens/errors"
+    autoload :Constants, "slack_status_cli/tokens/constants"
+
+    module Queries
+      autoload :LoadConfig, "slack_status_cli/tokens/queries/load_config"
+      autoload :MergedSettings, "slack_status_cli/tokens/queries/merged_settings"
+    end
+
+    module Commands
+      autoload :WriteConfig, "slack_status_cli/tokens/commands/write_config"
+    end
 
     module Backends
       autoload :Base, "slack_status_cli/tokens/backends/base"

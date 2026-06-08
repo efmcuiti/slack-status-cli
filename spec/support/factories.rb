@@ -3,6 +3,10 @@ module Factories
     { state: state, name: name, artist: artist, album: album }
   end
 
+  def build_config(global: {}, profiles: {})
+    { "global" => global, "profiles" => profiles }
+  end
+
   def build_slack_auth_response(team: "Phoenix HQ", user: "efmcuiti", ok: true)
     {
       "ok" => ok,
