@@ -50,6 +50,10 @@ module SlackStatusCli
       autoload :MergedSettings, "slack_status_cli/tokens/queries/merged_settings"
     end
 
+    module Commands
+      autoload :WriteConfig, "slack_status_cli/tokens/commands/write_config"
+    end
+
     module Backends
       autoload :Base, "slack_status_cli/tokens/backends/base"
       autoload :Dashlane, "slack_status_cli/tokens/backends/dashlane"
