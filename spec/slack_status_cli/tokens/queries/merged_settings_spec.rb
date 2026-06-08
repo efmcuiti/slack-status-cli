@@ -39,5 +39,26 @@ RSpec.describe SlackStatusCli::Tokens::Queries::MergedSettings do
 
       expect(described_class.call(config: config, profile: "work")).to eq("x" => 1)
     end
+
+    it "raises ConfigError when the global node is not a mapping" do
+      config = { "global" => 1, "profiles" => {} }
+
+      expect { described_class.call(config: config, profile: "work") }
+        .to raise_error(SlackStatusCli::Tokens::Errors::ConfigError, /global/)
+    end
+
+    it "raises ConfigError when the profiles node is not a mapping" do
+      config = { "global" => {}, "profiles" => [] }
+
+      expect { described_class.call(config: config, profile: "work") }
+        .to raise_error(SlackStatusCli::Tokens::Errors::ConfigError, /profiles/)
+    end
+
+    it "raises ConfigError when the profile entry is not a mapping" do
+      config = { "global" => {}, "profiles" => { "work" => 5 } }
+
+      expect { described_class.call(config: config, profile: "work") }
+        .to raise_error(SlackStatusCli::Tokens::Errors::ConfigError, /work/)
+    end
   end
 end

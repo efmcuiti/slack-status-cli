@@ -15,14 +15,25 @@ module SlackStatusCli
         end
 
         def call
-          global = config["global"] || {}
-          profile_settings = config.dig("profiles", profile) || {}
+          global = mapping(config["global"], "global")
+          profiles = mapping(config["profiles"], "profiles")
+          profile_settings = mapping(profiles[profile], "profiles.#{profile}")
           deep_merge(global, profile_settings)
         end
 
         private
 
         attr_reader :config, :profile
+
+        # Coerces a config node to a Hash, treating nil/absent as {} and raising
+        # a clear ConfigError when the node is some other type (e.g. `global: 1`
+        # or `profiles: []`) instead of letting deep_merge crash cryptically.
+        def mapping(value, label)
+          return {} if value.nil?
+          return value if value.is_a?(Hash)
+
+          raise Errors::ConfigError, "Expected `#{label}` to be a mapping, got #{value.class}"
+        end
 
         def deep_merge(left, right)
           return right.dup if left.nil? || left.empty?
