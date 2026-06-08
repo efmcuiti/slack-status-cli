@@ -44,6 +44,24 @@ RSpec.describe SlackStatusCli::Tokens::Queries::LoadConfig do
       end
     end
 
+    it "raises ConfigError when the top-level YAML is a sequence, not a mapping" do
+      with_tmp_config do |path:, **|
+        File.write(path, "- a\n- b\n")
+
+        expect { described_class.call(path: path) }
+          .to raise_error(SlackStatusCli::Tokens::Errors::ConfigError, /not a mapping/)
+      end
+    end
+
+    it "raises ConfigError when the top-level YAML is a scalar, not a mapping" do
+      with_tmp_config do |path:, **|
+        File.write(path, "just a string\n")
+
+        expect { described_class.call(path: path) }
+          .to raise_error(SlackStatusCli::Tokens::Errors::ConfigError, /not a mapping/)
+      end
+    end
+
     it "defaults to the Tokens default config path" do
       expect(described_class.new.path).to eq(SlackStatusCli::Tokens::Constants::DEFAULT_CONFIG_PATH)
     end

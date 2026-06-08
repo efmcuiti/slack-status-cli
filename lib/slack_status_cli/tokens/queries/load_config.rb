@@ -20,7 +20,13 @@ module SlackStatusCli
           return {} unless ::File.exist?(path)
 
           parsed = YAML.safe_load(::File.read(path), permitted_classes: [], aliases: false)
-          deep_stringify(parsed || {})
+          return {} if parsed.nil?
+
+          unless parsed.is_a?(Hash)
+            raise Errors::ConfigError, "#{path} is not a mapping (got #{parsed.class})"
+          end
+
+          deep_stringify(parsed)
         rescue Psych::Exception => e
           raise Errors::ConfigError, "Failed to parse #{path}: #{e.message}"
         end
