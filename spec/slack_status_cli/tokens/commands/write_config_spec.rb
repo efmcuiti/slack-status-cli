@@ -55,6 +55,15 @@ RSpec.describe SlackStatusCli::Tokens::Commands::WriteConfig do
       end
     end
 
+    it "propagates the original error (not a NameError) when mkdir_p fails early" do
+      with_tmp_config do |path:, **|
+        allow(FileUtils).to receive(:mkdir_p).and_raise(Errno::EACCES, "denied")
+
+        expect { described_class.call(config: build_config, path: path) }
+          .to raise_error(Errno::EACCES)
+      end
+    end
+
     it "leaves the existing config intact when the rename step fails (atomic)" do
       with_tmp_config do |path:, **|
         File.write(path, "old: data\n")
