@@ -53,6 +53,19 @@ RSpec.describe SlackStatusCli::Tokens::Commands::WriteConfig do
       end
     end
 
+    it "does not delete a pre-existing file at the temp path on an O_EXCL collision" do
+      with_tmp_config do |dir:, path:|
+        command = described_class.new(config: build_config, path: path)
+        allow(command).to receive(:rand).and_return(123_456)
+        squatted = File.join(dir, ".#{File.basename(path)}.#{Process.pid}.123456.tmp")
+        File.write(squatted, "not mine")
+
+        expect { command.call }.to raise_error(Errno::EEXIST)
+
+        expect(File.read(squatted)).to eq("not mine")
+      end
+    end
+
     it "does not leave a temp file behind after a successful write" do
       with_tmp_config do |dir:, path:|
         described_class.call(config: build_config, path: path)

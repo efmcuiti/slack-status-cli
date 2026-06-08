@@ -21,15 +21,20 @@ module SlackStatusCli
           ::FileUtils.mkdir_p(dir)
 
           tmp = ::File.join(dir, ".#{::File.basename(path)}.#{Process.pid}.#{rand(1_000_000)}.tmp")
+          created = false
           # O_EXCL + 0600 at creation closes the umask-dependent permission
           # window and refuses to follow a symlink pre-planted at the temp path.
           ::File.open(tmp, ::File::WRONLY | ::File::CREAT | ::File::EXCL, 0o600) do |file|
+            created = true
             file.write(YAML.dump(deep_stringify(config)))
           end
           ::File.rename(tmp, path)
           nil
         rescue StandardError
-          ::File.delete(tmp) if tmp && ::File.exist?(tmp)
+          # Only remove the temp file when THIS call created it — an EEXIST from
+          # O_EXCL means something was already there, and deleting it would clobber
+          # a file/symlink we don't own.
+          ::File.delete(tmp) if created && ::File.exist?(tmp)
           raise
         end
 
