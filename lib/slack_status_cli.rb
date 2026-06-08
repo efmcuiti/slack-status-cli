@@ -47,6 +47,7 @@ module SlackStatusCli
 
     module Queries
       autoload :LoadConfig, "slack_status_cli/tokens/queries/load_config"
+      autoload :MergedSettings, "slack_status_cli/tokens/queries/merged_settings"
     end
 
     module Backends
