@@ -31,6 +31,16 @@ RSpec.describe SlackStatusCli::Tokens::Commands::WriteConfig do
       end
     end
 
+    it "creates the file with 0600 without relying on a post-write chmod (race-free)" do
+      with_tmp_config do |path:, **|
+        allow(File).to receive(:chmod)
+
+        described_class.call(config: build_config, path: path)
+
+        expect(File.stat(path).mode & 0o777).to eq(0o600)
+      end
+    end
+
     it "leaves the existing config intact when the rename step fails (atomic)" do
       with_tmp_config do |path:, **|
         File.write(path, "old: data\n")

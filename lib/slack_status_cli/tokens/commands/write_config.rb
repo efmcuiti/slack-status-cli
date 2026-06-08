@@ -21,8 +21,11 @@ module SlackStatusCli
           ::FileUtils.mkdir_p(dir)
 
           tmp = ::File.join(dir, ".#{::File.basename(path)}.#{Process.pid}.#{rand(1_000_000)}.tmp")
-          ::File.write(tmp, YAML.dump(deep_stringify(config)))
-          ::File.chmod(0o600, tmp)
+          # O_EXCL + 0600 at creation closes the umask-dependent permission
+          # window and refuses to follow a symlink pre-planted at the temp path.
+          ::File.open(tmp, ::File::WRONLY | ::File::CREAT | ::File::EXCL, 0o600) do |file|
+            file.write(YAML.dump(deep_stringify(config)))
+          end
           ::File.rename(tmp, path)
           nil
         rescue StandardError
