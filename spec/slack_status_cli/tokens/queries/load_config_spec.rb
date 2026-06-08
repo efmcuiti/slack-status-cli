@@ -65,5 +65,10 @@ RSpec.describe SlackStatusCli::Tokens::Queries::LoadConfig do
     it "defaults to the Tokens default config path" do
       expect(described_class.new.path).to eq(SlackStatusCli::Tokens::Constants::DEFAULT_CONFIG_PATH)
     end
+
+    it "expands a leading ~ in the supplied path" do
+      expect(described_class.new(path: "~/.config/slack-status-cli/config.yml").path)
+        .to eq(File.expand_path("~/.config/slack-status-cli/config.yml"))
+    end
   end
 end

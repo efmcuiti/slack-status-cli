@@ -41,6 +41,20 @@ RSpec.describe SlackStatusCli::Tokens::Commands::WriteConfig do
       end
     end
 
+    it "expands a leading ~ in the path using HOME before writing" do
+      with_tmp_config do |dir:, **|
+        original_home = ENV["HOME"]
+        ENV["HOME"] = dir
+        Dir.chdir(dir) do
+          described_class.call(config: build_config, path: "~/nested/config.yml")
+
+          expect(File.exist?(File.join(dir, "nested", "config.yml"))).to be(true)
+        end
+      ensure
+        ENV["HOME"] = original_home
+      end
+    end
+
     it "leaves the existing config intact when the rename step fails (atomic)" do
       with_tmp_config do |path:, **|
         File.write(path, "old: data\n")

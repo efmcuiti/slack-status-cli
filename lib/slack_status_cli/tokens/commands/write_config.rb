@@ -13,7 +13,7 @@ module SlackStatusCli
 
         def initialize(config:, path: Constants::DEFAULT_CONFIG_PATH)
           @config = config
-          @path = path
+          @path = ::File.expand_path(path)
         end
 
         def call

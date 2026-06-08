@@ -11,7 +11,7 @@ module SlackStatusCli
         extend Callable
 
         def initialize(path: Constants::DEFAULT_CONFIG_PATH)
-          @path = path
+          @path = ::File.expand_path(path)
         end
 
         attr_reader :path
