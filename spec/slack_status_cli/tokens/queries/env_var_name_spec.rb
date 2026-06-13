@@ -10,8 +10,8 @@ RSpec.describe SlackStatusCli::Tokens::Queries::EnvVarName do
       expect(described_class.call(profile: "work-account")).to eq("SLACK_STATUS_TOKEN_WORK_ACCOUNT")
     end
 
-    it "collapses any non-alphanumeric character to a single underscore" do
-      expect(described_class.call(profile: "my work")).to eq("SLACK_STATUS_TOKEN_MY_WORK")
+    it "replaces each non-alphanumeric character with its own underscore" do
+      expect(described_class.call(profile: "my  work")).to eq("SLACK_STATUS_TOKEN_MY__WORK")
     end
   end
 end
