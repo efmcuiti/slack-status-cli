@@ -3,9 +3,10 @@ module SlackStatusCli
     module Queries
       # Derives the profile-scoped environment variable name a token can be read
       # from, e.g. profile "default" -> "SLACK_STATUS_TOKEN_DEFAULT". The profile
-      # is upcased and each non-alphanumeric character is replaced with its own
-      # underscore (so "my  work" -> "MY__WORK") to keep names shell-safe. This is
-      # the key the precedence walker checks at the ENV step; it matches the Env
+      # is upcased and any character outside [A-Z0-9_] is replaced with its own
+      # underscore (so "my  work" -> "MY__WORK"); existing underscores pass
+      # through unchanged, keeping names shell-safe. This is the key the
+      # precedence walker checks at the ENV step; it matches the Env
       # backend's *default* key derivation, but the two diverge when the backend
       # reads/writes a custom key via `backend_options.env.var`.
       class EnvVarName
