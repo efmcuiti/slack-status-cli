@@ -1,3 +1,5 @@
+require "shellwords"
+
 module SlackStatusCli
   module Tokens
     module Queries
@@ -47,12 +49,16 @@ module SlackStatusCli
         attr_reader :profile, :config_path, :tried_backend, :profile_configured, :legacy_env_present
 
         def remediation_steps
+          # Escape the profile only in the two copy-pasteable shell commands so a
+          # profile like "my work" stays valid when pasted; prose lines elsewhere
+          # keep the unescaped name for readability.
+          shell_profile = profile.to_s.shellescape
           [
             "",
             "Fix one of:",
-            "  1. ruby slack_status.rb setup --profile #{profile}",
+            "  1. ruby slack_status.rb setup --profile #{shell_profile}",
             "  2. export #{EnvVarName.call(profile: profile)}=xoxp-... in your shell",
-            "  3. ruby slack_status.rb --token xoxp-... --profile #{profile} <mode>"
+            "  3. ruby slack_status.rb --token xoxp-... --profile #{shell_profile} <mode>"
           ]
         end
 

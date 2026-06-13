@@ -49,6 +49,23 @@ RSpec.describe SlackStatusCli::Tokens::Queries::NotFoundMessage do
       expect(message).to include("ruby slack_status.rb --token xoxp-... --profile work")
     end
 
+    it "shell-escapes a profile with spaces in the remediation commands" do
+      message = described_class.call(
+        profile: "my work", config_path: "/cfg.yml", tried_backend: nil, profile_configured: false
+      )
+
+      expect(message).to include('setup --profile my\ work')
+      expect(message).to include('--token xoxp-... --profile my\ work')
+    end
+
+    it "leaves a simple profile unescaped in the remediation commands" do
+      message = described_class.call(
+        profile: "work", config_path: "/cfg.yml", tried_backend: nil, profile_configured: false
+      )
+
+      expect(message).to include("setup --profile work")
+    end
+
     it "appends the ignored SLACK_SECRET_TOKEN note for a non-default profile when legacy_env_present" do
       message = described_class.call(
         profile: "work", config_path: "/cfg.yml", tried_backend: nil,
