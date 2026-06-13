@@ -49,6 +49,7 @@ module SlackStatusCli
       autoload :LoadConfig, "slack_status_cli/tokens/queries/load_config"
       autoload :MergedSettings, "slack_status_cli/tokens/queries/merged_settings"
       autoload :EnvVarName, "slack_status_cli/tokens/queries/env_var_name"
+      autoload :ProfileExplicitlyConfigured, "slack_status_cli/tokens/queries/profile_explicitly_configured"
     end
 
     module Commands
