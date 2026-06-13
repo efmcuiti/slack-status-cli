@@ -2,23 +2,27 @@ module SlackStatusCli
   module Tokens
     module Queries
       # Builds the multi-line, human-facing message raised as NotFoundError when
-      # no token resolves for a profile. Extracted verbatim from the legacy
+      # no token resolves for a profile. Extracted from the legacy
       # `TokenResolver#friendly_not_found_message`: it names the profile, surfaces
       # the tried backend's own not_found_hint (or, for an unconfigured
       # non-default profile, points at the config path), lists the three
       # remediation steps, and explains when SLACK_SECRET_TOKEN is being ignored
       # on purpose to avoid cross-workspace token leakage.
+      #
+      # Pure function of its inputs: the caller (ResolveToken) decides whether the
+      # legacy SLACK_SECRET_TOKEN is present and threads it in via
+      # `legacy_env_present:`, so this helper never reads process ENV itself.
       class NotFoundMessage
         extend Callable
 
         DEFAULT_PROFILE = "default".freeze
-        LEGACY_ENV_VAR = "SLACK_SECRET_TOKEN".freeze
 
-        def initialize(profile:, config_path:, tried_backend: nil, profile_configured: false)
+        def initialize(profile:, config_path:, tried_backend: nil, profile_configured: false, legacy_env_present: false)
           @profile = profile
           @config_path = config_path
           @tried_backend = tried_backend
           @profile_configured = profile_configured
+          @legacy_env_present = legacy_env_present
         end
 
         def call
@@ -40,7 +44,7 @@ module SlackStatusCli
 
         private
 
-        attr_reader :profile, :config_path, :tried_backend, :profile_configured
+        attr_reader :profile, :config_path, :tried_backend, :profile_configured, :legacy_env_present
 
         def remediation_steps
           [
@@ -53,7 +57,7 @@ module SlackStatusCli
         end
 
         def legacy_note?
-          non_empty?(ENV[LEGACY_ENV_VAR]) && (profile != DEFAULT_PROFILE || profile_configured)
+          legacy_env_present && (profile != DEFAULT_PROFILE || profile_configured)
         end
 
         def legacy_note
@@ -64,10 +68,6 @@ module SlackStatusCli
             "workspace. The legacy fallback only applies to the `default`",
             "profile when no backend is configured."
           ]
-        end
-
-        def non_empty?(value)
-          !value.nil? && !value.to_s.strip.empty?
         end
       end
     end

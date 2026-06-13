@@ -54,7 +54,8 @@ module SlackStatusCli
             profile: profile,
             config_path: config_path,
             tried_backend: backend,
-            profile_configured: profile_configured
+            profile_configured: profile_configured,
+            legacy_env_present: non_empty?(ENV[LEGACY_ENV_VAR])
           )
         end
 
