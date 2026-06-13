@@ -38,7 +38,7 @@ module SlackStatusCli
           klass = BACKEND_CLASSES[backend_name.to_s]
           unless klass
             raise Errors::ConfigError,
-                  "Unknown storage_backend '#{backend_name}' (supported: #{BACKEND_CLASSES.keys.join(', ')})"
+                  "Unknown backend_name '#{backend_name}' (supported: #{BACKEND_CLASSES.keys.join(', ')})"
           end
 
           klass.new(profile: profile, settings: settings)
