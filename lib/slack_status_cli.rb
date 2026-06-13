@@ -56,6 +56,7 @@ module SlackStatusCli
 
     module Commands
       autoload :WriteConfig, "slack_status_cli/tokens/commands/write_config"
+      autoload :WriteToken, "slack_status_cli/tokens/commands/write_token"
     end
 
     module Backends
