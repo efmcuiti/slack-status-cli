@@ -15,7 +15,7 @@ RSpec.describe SlackStatusCli::Tokens::Queries::ResolveToken do
     keys.each { |key| ENV.delete(key) }
     yield
   ensure
-    saved.each { |key, had, old| ENV[key] = old if had }
+    saved.each { |key, had, old| had ? ENV[key] = old : ENV.delete(key) }
   end
 
   def write_token_file(path, contents)

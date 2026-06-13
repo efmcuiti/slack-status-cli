@@ -7,7 +7,7 @@ RSpec.describe SlackStatusCli::Tokens::Queries::NotFoundMessage do
     ENV.delete(key)
     yield
   ensure
-    ENV[key] = old if had
+    had ? ENV[key] = old : ENV.delete(key)
   end
 
   def with_env(key, value)
