@@ -51,6 +51,7 @@ module SlackStatusCli
       autoload :EnvVarName, "slack_status_cli/tokens/queries/env_var_name"
       autoload :ProfileExplicitlyConfigured, "slack_status_cli/tokens/queries/profile_explicitly_configured"
       autoload :NotFoundMessage, "slack_status_cli/tokens/queries/not_found_message"
+      autoload :ResolveToken, "slack_status_cli/tokens/queries/resolve_token"
     end
 
     module Commands
