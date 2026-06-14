@@ -9,11 +9,11 @@ Project layout, the token-resolver design, and a few "we considered X" notes so 
 ├── slack_status.rb              # CLI entry point: OptionParser + subcommand dispatch
 ├── Gemfile                      # Minimal: webrick (extracted from stdlib in Ruby 3.0)
 ├── lib/
-│   ├── slack.rb                 # Slack API integration (users.profile.set, auth.test)
-│   ├── music.rb                 # Now-playing detection (nowplaying-cli + AppleScript fallback)
-│   ├── token_resolver.rb        # Profile-aware token resolver + Dashlane/Keychain/file/env backends
+│   ├── slack_status_cli.rb      # Root namespace + autoload entry point for the Callable pods
+│   ├── slack_status_cli/        # Callable pods: slack/, music/, tokens/ (+ callable.rb, secret_scrubber.rb)
+│   ├── cli_prompt.rb            # Interactive UX helpers ([Y/n], secret input, emoji progress, scrub_secrets)
 │   ├── oauth_helper.rb          # WEBrick one-shot OAuth listener + oauth.v2.access exchange
-│   └── cli_prompt.rb            # Interactive UX helpers ([Y/n], secret input, emoji progress, scrub_secrets)
+│   └── emoji_migrator.rb        # Emoji export helper (migrate-emojis subcommand)
 ├── docs/
 │   ├── setup.md                 # Slack App + manifest, prerequisites, setup walkthrough
 │   ├── security.md              # Token storage strategies, Dashlane, threat model, rotation
@@ -28,7 +28,7 @@ Project layout, the token-resolver design, and a few "we considered X" notes so 
 
 ## Token resolver
 
-`TokenResolver.new(profile:, cli_token:, config_path:).resolve` walks a fixed precedence chain and returns `{ token:, source:, profile: }`. First non-empty wins; no silent fallbacks.
+`SlackStatusCli::Tokens::Queries::ResolveToken.call(profile:, cli_token:, config_path:)` walks a fixed precedence chain and returns `{ token:, source:, profile: }`. First non-empty wins; no silent fallbacks.
 
 ```
 1. --token CLI flag           (cli:--token)
@@ -68,7 +68,7 @@ profiles:
     storage_backend: keychain     # overrides global
 ```
 
-`TokenResolver#merged_settings` deep-merges the two before any backend lookup, so a backend never sees the unmerged form. The OAuth `client_id` and `client_secret_ref` belong in `global` because they're properties of the Slack App (one App per repo), not of an individual workspace token.
+`SlackStatusCli::Tokens::Queries::MergedSettings` deep-merges the two before any backend lookup, so a backend never sees the unmerged form. The OAuth `client_id` and `client_secret_ref` belong in `global` because they're properties of the Slack App (one App per repo), not of an individual workspace token.
 
 ## Why no `slack` CLI for token generation
 
@@ -97,7 +97,7 @@ WEBrick is the simplest HTTP server that ships with Ruby and was removed from st
 
 ## Future work
 
-- **Adopt RSpec.** The repo has no `spec/` yet; manual test plans in PR descriptions are the substitute. A first follow-up should scaffold RSpec and add coverage for `TokenResolver` (precedence chain, backend dispatch, `FileBackend` perm-guard, merged settings).
+- **Broaden spec coverage.** The Tokens pod callables (`ResolveToken`, the backends, `MergedSettings`) have specs; the remaining CLI dispatcher in `slack_status.rb` is covered only by manual smoke tests until the Cli pod extraction lands.
 - **Real ticket tracker.** The workspace rule mandates `em/PI-XXX_*` branch names, but `PI-XXX` is currently synthetic. Wiring Linear / GitHub Issues would let the PR template link real tickets.
 - **Windows / Linux Keychain equivalents.** `KeychainBackend` currently shells out to macOS `security`. `secret-tool` (libsecret) on Linux and `wincred` on Windows would be drop-in replacements once the tool grows past macOS.
 - **Scheduled rotation.** Today `setup --rotate` is on-demand. A cron-friendly `slack_status.rb rotate` that revokes the old token via `auth.revoke` and stores the new one would round out the lifecycle.

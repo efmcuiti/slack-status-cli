@@ -1,8 +1,7 @@
 module SlackStatusCli
   module Tokens
     module Queries
-      # The token precedence walker, extracted from the legacy
-      # `TokenResolver#resolve`. Returns the first non-empty token found,
+      # The token precedence walker. Returns the first non-empty token found,
       # walking: cli_token -> SLACK_STATUS_TOKEN_<PROFILE> env -> the
       # config-driven backend -> the legacy SLACK_SECRET_TOKEN fallback. Raises
       # NotFoundError (carrying NotFoundMessage) when nothing resolves.

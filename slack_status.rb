@@ -6,12 +6,13 @@ require 'json'
 require 'optparse'
 
 require 'cli_prompt'
-require 'token_resolver'
 require 'slack_status_cli'
 
 RESERVED_MODES = %i[myth lunch break clear musical_myth].freeze
 SUBCOMMANDS    = %w[setup doctor config profiles].freeze
-BACKENDS       = TokenResolver::SUPPORTED_BACKENDS
+BACKENDS       = SlackStatusCli::Tokens::Commands::WriteToken::BACKEND_CLASSES.keys.freeze
+DEFAULT_PROFILE = "default".freeze
+DEFAULT_CONFIG_PATH = SlackStatusCli::Tokens::Constants::DEFAULT_CONFIG_PATH
 
 def parse_global_flags(argv)
   options = {
@@ -64,10 +65,14 @@ def parse_global_flags(argv)
   options
 end
 
-def build_resolver(options)
-  TokenResolver.new(
-    profile: options[:profile],
-    cli_token: options[:token],
+def effective_profile(options)
+  options[:profile] || ENV["SLACK_STATUS_PROFILE"] || DEFAULT_PROFILE
+end
+
+def resolve_token(profile:, cli_token:, options:)
+  SlackStatusCli::Tokens::Queries::ResolveToken.call(
+    profile: profile,
+    cli_token: cli_token,
     config_path: options[:config_path],
     verbose: options[:verbose],
   )
@@ -87,11 +92,10 @@ def run_status_mode(command, rest_args, options)
     expiration = rest_args[2]
   end
 
-  resolver = build_resolver(options)
   token_info =
     begin
-      resolver.resolve
-    rescue TokenResolver::NotFoundError => e
+      resolve_token(profile: effective_profile(options), cli_token: options[:token], options: options)
+    rescue SlackStatusCli::Tokens::Errors::NotFoundError => e
       CliPrompt.fail("Could not resolve a Slack token.")
       e.message.each_line { |line| warn "   #{line.chomp}" }
       exit 1
@@ -129,9 +133,9 @@ end
 def run_setup(options)
   require 'oauth_helper'
 
-  profile = options[:profile] || ENV["SLACK_STATUS_PROFILE"] || TokenResolver::DEFAULT_PROFILE
-  config_path = options[:config_path] || TokenResolver::DEFAULT_CONFIG_PATH
-  config = TokenResolver.load_config(config_path)
+  profile = effective_profile(options)
+  config_path = options[:config_path] || DEFAULT_CONFIG_PATH
+  config = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: config_path)
   config["global"] ||= {}
   config["profiles"] ||= {}
 
@@ -290,9 +294,9 @@ def resolve_backend(options, config, profile)
 end
 
 def profile_has_token?(profile, config_path)
-  TokenResolver.new(profile: profile, config_path: config_path).resolve
+  SlackStatusCli::Tokens::Queries::ResolveToken.call(profile: profile, config_path: config_path)
   true
-rescue TokenResolver::NotFoundError
+rescue SlackStatusCli::Tokens::Errors::NotFoundError
   false
 end
 
@@ -301,7 +305,7 @@ def persist_global_defaults(config, config_path, client_id:, backend:)
   config["global"]["oauth"] ||= {}
   config["global"]["oauth"]["client_id"] = client_id
   config["global"]["storage_backend"] = backend
-  TokenResolver.write_config(config, config_path)
+  SlackStatusCli::Tokens::Commands::WriteConfig.call(config: config, path: config_path)
 end
 
 def persist_profile_token(config, config_path, profile:, backend:, token:, client_id: nil)
@@ -319,14 +323,19 @@ def persist_profile_token(config, config_path, profile:, backend:, token:, clien
     config["profiles"][profile]["oauth"]["client_id"] = client_id
   end
 
-  TokenResolver.write_config(config, config_path)
+  SlackStatusCli::Tokens::Commands::WriteConfig.call(config: config, path: config_path)
 
-  resolver = TokenResolver.new(profile: profile, config_path: config_path)
+  settings = SlackStatusCli::Tokens::Queries::MergedSettings.call(config: config, profile: profile)
   begin
-    label = resolver.write_token(token, backend_name: backend)
-    CliPrompt.secret_written("Wrote token to #{label}.")
+    written = SlackStatusCli::Tokens::Commands::WriteToken.call(
+      token: token,
+      profile: profile,
+      backend_name: backend,
+      settings: settings,
+    )
+    CliPrompt.secret_written("Wrote token to #{written[:source]}.")
     CliPrompt.done("Setup complete. Verify with: ruby slack_status.rb doctor --profile #{profile}")
-  rescue TokenResolver::ManualWriteRequired => e
+  rescue SlackStatusCli::Tokens::Errors::ManualWriteRequired => e
     CliPrompt.warn("Backend `#{backend}` needs a manual step:")
     e.message.each_line { |line| puts "   #{line.chomp}" }
     CliPrompt.done("Once stored, verify with: ruby slack_status.rb doctor --profile #{profile}")
@@ -344,12 +353,12 @@ def redacted_token(token)
 end
 
 def run_doctor(options)
-  resolver = build_resolver(options)
+  profile = effective_profile(options)
   token_info =
     begin
-      resolver.resolve
-    rescue TokenResolver::NotFoundError => e
-      CliPrompt.fail("No token resolved for profile '#{resolver.profile}'.")
+      resolve_token(profile: profile, cli_token: options[:token], options: options)
+    rescue SlackStatusCli::Tokens::Errors::NotFoundError => e
+      CliPrompt.fail("No token resolved for profile '#{profile}'.")
       e.message.each_line { |line| warn "   #{line.chomp}" }
       exit 1
     end
@@ -384,16 +393,10 @@ def run_migrate_emojis(options)
   abort "migrate-emojis requires --from <profile>" if from.nil? || from.empty?
   to = options[:to]
 
-  source_resolver = TokenResolver.new(
-    profile: from,
-    cli_token: nil,
-    config_path: options[:config_path],
-    verbose: options[:verbose],
-  )
   source_token =
     begin
-      source_resolver.resolve[:token]
-    rescue TokenResolver::NotFoundError => e
+      resolve_token(profile: from, cli_token: nil, options: options)[:token]
+    rescue SlackStatusCli::Tokens::Errors::NotFoundError => e
       CliPrompt.fail("Could not resolve a token for source profile '#{from}'.")
       e.message.each_line { |line| warn "   #{line.chomp}" }
       exit 1
@@ -477,13 +480,7 @@ end
 # failure (network, missing profile, rejected token) — caller treats that as
 # "skip the browser step".
 def resolve_admin_url(options, to_profile)
-  resolver = TokenResolver.new(
-    profile: to_profile,
-    cli_token: nil,
-    config_path: options[:config_path],
-    verbose: options[:verbose],
-  )
-  token = resolver.resolve[:token]
+  token = resolve_token(profile: to_profile, cli_token: nil, options: options)[:token]
   response = SlackStatusCli::Slack::Queries::AuthTest.call(token: token)
   return nil unless response["ok"]
   url = response["url"].to_s.sub(/\/+\z/, "")
@@ -508,12 +505,12 @@ end
 
 def run_config(args, options)
   sub = args.shift
-  config_path = options[:config_path] || TokenResolver::DEFAULT_CONFIG_PATH
+  config_path = options[:config_path] || DEFAULT_CONFIG_PATH
 
   case sub
   when "get"
     key = args.shift or abort "Usage: config get <dotted.key>"
-    config = TokenResolver.load_config(config_path)
+    config = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: config_path)
     value = dotted_get(config, key)
     if value.nil?
       warn "(unset)"
@@ -524,9 +521,9 @@ def run_config(args, options)
     key = args.shift or abort "Usage: config set <dotted.key> <value>"
     value = args.shift
     abort "Usage: config set <dotted.key> <value>" if value.nil?
-    config = TokenResolver.load_config(config_path)
+    config = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: config_path)
     dotted_set!(config, key, coerce_scalar(value))
-    TokenResolver.write_config(config, config_path)
+    SlackStatusCli::Tokens::Commands::WriteConfig.call(config: config, path: config_path)
     CliPrompt.done("set #{key} = #{value}")
   when "path"
     puts config_path
@@ -543,8 +540,8 @@ end
 
 def run_profiles(args, options)
   sub = args.shift || "list"
-  config_path = options[:config_path] || TokenResolver::DEFAULT_CONFIG_PATH
-  config = TokenResolver.load_config(config_path)
+  config_path = options[:config_path] || DEFAULT_CONFIG_PATH
+  config = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: config_path)
 
   case sub
   when "list"

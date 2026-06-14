@@ -4,8 +4,7 @@ module SlackStatusCli
   module Tokens
     module Queries
       # Builds the multi-line, human-facing message raised as NotFoundError when
-      # no token resolves for a profile. Extracted from the legacy
-      # `TokenResolver#friendly_not_found_message`: it names the profile, surfaces
+      # no token resolves for a profile: it names the profile, surfaces
       # the tried backend's own not_found_hint (or, for an unconfigured
       # non-default profile, points at the config path), lists the three
       # remediation steps, and explains when SLACK_SECRET_TOKEN is being ignored
