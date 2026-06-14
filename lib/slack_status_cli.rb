@@ -68,6 +68,15 @@ module SlackStatusCli
     end
   end
 
+  module Oauth
+    autoload :Errors, "slack_status_cli/oauth/errors"
+
+    module Queries
+      autoload :AuthorizeUrl, "slack_status_cli/oauth/queries/authorize_url"
+      autoload :HandleCallbackRequest, "slack_status_cli/oauth/queries/handle_callback_request"
+    end
+  end
+
   module Music
     autoload :Constants, "slack_status_cli/music/constants"
 
