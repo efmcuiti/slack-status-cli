@@ -70,6 +70,10 @@ module SlackStatusCli
 
   module Oauth
     autoload :Errors, "slack_status_cli/oauth/errors"
+
+    module Queries
+      autoload :AuthorizeUrl, "slack_status_cli/oauth/queries/authorize_url"
+    end
   end
 
   module Music
