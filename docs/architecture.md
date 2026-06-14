@@ -9,11 +9,11 @@ Project layout, the token-resolver design, and a few "we considered X" notes so 
 ├── slack_status.rb              # CLI entry point: OptionParser + subcommand dispatch
 ├── Gemfile                      # Minimal: webrick (extracted from stdlib in Ruby 3.0)
 ├── lib/
-│   ├── slack.rb                 # Slack API integration (users.profile.set, auth.test)
-│   ├── music.rb                 # Now-playing detection (nowplaying-cli + AppleScript fallback)
-│   ├── slack_status_cli/        # Callable pods — tokens/ holds ResolveToken + backends (Dashlane/Keychain/file/env)
+│   ├── slack_status_cli.rb      # Root namespace + autoload entry point for the Callable pods
+│   ├── slack_status_cli/        # Callable pods: slack/, music/, tokens/ (+ callable.rb, secret_scrubber.rb)
+│   ├── cli_prompt.rb            # Interactive UX helpers ([Y/n], secret input, emoji progress, scrub_secrets)
 │   ├── oauth_helper.rb          # WEBrick one-shot OAuth listener + oauth.v2.access exchange
-│   └── cli_prompt.rb            # Interactive UX helpers ([Y/n], secret input, emoji progress, scrub_secrets)
+│   └── emoji_migrator.rb        # Emoji export helper (migrate-emojis subcommand)
 ├── docs/
 │   ├── setup.md                 # Slack App + manifest, prerequisites, setup walkthrough
 │   ├── security.md              # Token storage strategies, Dashlane, threat model, rotation
