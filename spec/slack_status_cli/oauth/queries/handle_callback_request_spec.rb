@@ -41,8 +41,9 @@ RSpec.describe SlackStatusCli::Oauth::Queries::HandleCallbackRequest do
         expect(result[:code]).to be_nil
       end
 
-      it "serves the error body" do
-        expect(result[:body]).to include("OAuth failed")
+      it "serves a human-readable error body, not the machine token" do
+        expect(result[:body]).to include("OAuth failed", "state mismatch")
+        expect(result[:body]).not_to include("state_mismatch")
       end
     end
 
@@ -58,8 +59,8 @@ RSpec.describe SlackStatusCli::Oauth::Queries::HandleCallbackRequest do
         expect(result).to include(error: "access_denied", status: 400)
       end
 
-      it "serves the error body" do
-        expect(result[:body]).to include("OAuth failed")
+      it "names the Slack error in the human-readable body" do
+        expect(result[:body]).to include("OAuth failed", "Slack returned error=access_denied")
       end
     end
 
@@ -75,8 +76,9 @@ RSpec.describe SlackStatusCli::Oauth::Queries::HandleCallbackRequest do
         expect(result).to include(error: "missing_code", status: 400)
       end
 
-      it "serves the error body" do
-        expect(result[:body]).to include("OAuth failed")
+      it "serves a human-readable error body, not the machine token" do
+        expect(result[:body]).to include("OAuth failed", "missing `code`")
+        expect(result[:body]).not_to include("missing_code")
       end
     end
   end

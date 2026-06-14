@@ -16,9 +16,9 @@ module SlackStatusCli
         end
 
         def call
-          return error_result(slack_error) if slack_error
-          return error_result("state_mismatch") unless state_matches?
-          return error_result("missing_code") if blank?(code)
+          return error_result(slack_error, "Slack returned error=#{slack_error}") if slack_error
+          return error_result("state_mismatch", "OAuth state mismatch (CSRF guard)") unless state_matches?
+          return error_result("missing_code", "OAuth callback missing `code`") if blank?(code)
 
           {
             code: code,
@@ -46,13 +46,15 @@ module SlackStatusCli
           params["code"]
         end
 
-        def error_result(error)
+        # `error` stays the machine-friendly token for programmatic handling;
+        # `message` is the human-readable text rendered into the HTML page.
+        def error_result(error, message)
           {
             code: nil,
             state: params["state"],
             error: error,
             status: 400,
-            body: error_body(error)
+            body: error_body(message)
           }
         end
 
