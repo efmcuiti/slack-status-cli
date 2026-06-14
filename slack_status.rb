@@ -10,7 +10,7 @@ require 'slack_status_cli'
 
 RESERVED_MODES = %i[myth lunch break clear musical_myth].freeze
 SUBCOMMANDS    = %w[setup doctor config profiles].freeze
-BACKENDS       = %w[dashlane keychain file env].freeze
+BACKENDS       = SlackStatusCli::Tokens::Commands::WriteToken::BACKEND_CLASSES.keys.freeze
 DEFAULT_PROFILE = "default".freeze
 DEFAULT_CONFIG_PATH = SlackStatusCli::Tokens::Constants::DEFAULT_CONFIG_PATH
 
