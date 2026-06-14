@@ -73,6 +73,7 @@ module SlackStatusCli
 
     module Queries
       autoload :AuthorizeUrl, "slack_status_cli/oauth/queries/authorize_url"
+      autoload :HandleCallbackRequest, "slack_status_cli/oauth/queries/handle_callback_request"
     end
   end
 

@@ -7,6 +7,14 @@ module Factories
     { "global" => global, "profiles" => profiles }
   end
 
+  def build_callback_params(code: "auth-code", state: "state", error: nil)
+    params = {}
+    params["code"] = code unless code.nil?
+    params["state"] = state unless state.nil?
+    params["error"] = error unless error.nil?
+    params
+  end
+
   def build_slack_auth_response(team: "Phoenix HQ", user: "efmcuiti", ok: true)
     {
       "ok" => ok,
