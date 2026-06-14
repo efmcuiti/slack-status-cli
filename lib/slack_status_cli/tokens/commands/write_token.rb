@@ -2,9 +2,8 @@ module SlackStatusCli
   module Tokens
     module Commands
       # Persists a token through the named storage backend, built from the
-      # already-merged settings the caller passes in. Extracted from the legacy
-      # `TokenResolver#write_token`. Returns `{ source:, location: }` so the
-      # caller can tell the user where the token landed; backends that can't
+      # already-merged settings the caller passes in. Returns `{ source:, location: }`
+      # so the caller can tell the user where the token landed; backends that can't
       # write unattended (Env, Dashlane) raise ManualWriteRequired with
       # copy-paste instructions instead.
       class WriteToken
