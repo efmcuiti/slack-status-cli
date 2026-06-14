@@ -48,10 +48,15 @@ module SlackStatusCli
     module Queries
       autoload :LoadConfig, "slack_status_cli/tokens/queries/load_config"
       autoload :MergedSettings, "slack_status_cli/tokens/queries/merged_settings"
+      autoload :EnvVarName, "slack_status_cli/tokens/queries/env_var_name"
+      autoload :ProfileExplicitlyConfigured, "slack_status_cli/tokens/queries/profile_explicitly_configured"
+      autoload :NotFoundMessage, "slack_status_cli/tokens/queries/not_found_message"
+      autoload :ResolveToken, "slack_status_cli/tokens/queries/resolve_token"
     end
 
     module Commands
       autoload :WriteConfig, "slack_status_cli/tokens/commands/write_config"
+      autoload :WriteToken, "slack_status_cli/tokens/commands/write_token"
     end
 
     module Backends
