@@ -146,3 +146,65 @@ gh api graphql -f query='
   }'
 # OPTION_ID: Todo = f75ad846, In Progress = 47fc9ee4, Done = 98236657
 ```
+
+## PR review response (Copilot)
+
+Every PR in this project is reviewed by GitHub Copilot, which leaves inline review comments and re-reviews on each push. These are the exact recipes the `/ruby-dev` **PR Review Response Loop** (Step 12) uses — use them verbatim instead of re-deriving the API filters each session.
+
+**Bot identities (they differ by context):**
+
+| Context | Login |
+|---|---|
+| Inline review comment author | `Copilot` |
+| Requested reviewer (for re-request) | `copilot-pull-request-reviewer[bot]` |
+
+**1. List open (unaddressed) inline comments** — top-level only, oldest first; replies have a non-null `in_reply_to_id` and are filtered out:
+
+```bash
+gh api 'repos/efmcuiti/slack-status-cli/pulls/<N>/comments?sort=created&direction=asc&per_page=100' \
+  --jq '.[] | select(.in_reply_to_id==null) | "id=\(.id)\t\(.path):\(.line // .original_line)\t\(.user.login)\n\(.body)\n"'
+```
+
+To see review summary bodies (the "Copilot reviewed N changed files" verdicts):
+
+```bash
+gh api repos/efmcuiti/slack-status-cli/pulls/<N>/reviews \
+  --jq '.[] | select(.user.login | test("[Cc]opilot")) | "\(.submitted_at)\t\(.state)\n\(.body)\n"'
+```
+
+**2. Reply to a comment** — post after the fix is committed and pushed, citing the commit SHA:
+
+```bash
+gh api repos/efmcuiti/slack-status-cli/pulls/<N>/comments/<COMMENT_ID>/replies \
+  -f body="Good catch — fixed in <SHA>. <one-line explanation>."
+```
+
+**3. Fetch review-thread IDs + resolution state** (REST comments have no thread ID; you need GraphQL):
+
+```bash
+gh api graphql -f query='
+{
+  repository(owner: "efmcuiti", name: "slack-status-cli") {
+    pullRequest(number: <N>) {
+      reviewThreads(first: 50) {
+        nodes { id isResolved path comments(first: 1) { nodes { author { login } body } } }
+      }
+    }
+  }
+}' --jq '.data.repository.pullRequest.reviewThreads.nodes[] | "\(.id)\t\(.isResolved)\t\(.path)\t\(.comments.nodes[0].author.login)"'
+```
+
+**4. Resolve a thread** once its comment is addressed and replied to:
+
+```bash
+gh api graphql -f query='mutation { resolveReviewThread(input: { threadId: "<PRRT_...>" }) { thread { isResolved path } } }'
+```
+
+**5. Re-request Copilot review** — LAST, only after every comment in the round is fixed, pushed, replied to, and resolved:
+
+```bash
+gh api repos/efmcuiti/slack-status-cli/pulls/<N>/requested_reviewers \
+  -X POST -f "reviewers[]=copilot-pull-request-reviewer[bot]"
+```
+
+**Close-out gate:** before merging (Step 13), re-run recipe 3 — if any thread shows `isResolved=false`, the review loop is not done.
