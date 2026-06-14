@@ -68,6 +68,10 @@ module SlackStatusCli
     end
   end
 
+  module Oauth
+    autoload :Errors, "slack_status_cli/oauth/errors"
+  end
+
   module Music
     autoload :Constants, "slack_status_cli/music/constants"
 
