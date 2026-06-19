@@ -82,6 +82,7 @@ module SlackStatusCli
 
     module Views
       autoload :SuccessPage, "slack_status_cli/oauth/views/success_page"
+      autoload :ErrorPage, "slack_status_cli/oauth/views/error_page"
     end
   end
 
