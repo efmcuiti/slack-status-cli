@@ -15,6 +15,14 @@ module Factories
     params
   end
 
+  def build_oauth_access_response(ok: true, token: "xoxp-user-token", scope: "users.profile:write,emoji:read", user_id: "U0123456789", team_id: "T0123456789", team_name: "Phoenix HQ")
+    {
+      "ok" => ok,
+      "authed_user" => { "access_token" => token, "scope" => scope, "id" => user_id },
+      "team" => { "id" => team_id, "name" => team_name }
+    }
+  end
+
   def build_slack_auth_response(team: "Phoenix HQ", user: "efmcuiti", ok: true)
     {
       "ok" => ok,

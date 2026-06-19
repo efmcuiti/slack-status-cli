@@ -75,6 +75,10 @@ module SlackStatusCli
       autoload :AuthorizeUrl, "slack_status_cli/oauth/queries/authorize_url"
       autoload :HandleCallbackRequest, "slack_status_cli/oauth/queries/handle_callback_request"
     end
+
+    module Commands
+      autoload :ExchangeCode, "slack_status_cli/oauth/commands/exchange_code"
+    end
   end
 
   module Music
