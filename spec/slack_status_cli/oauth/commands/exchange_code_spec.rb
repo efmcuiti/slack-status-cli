@@ -66,6 +66,18 @@ RSpec.describe SlackStatusCli::Oauth::Commands::ExchangeCode do
         .to raise_error(SlackStatusCli::Oauth::Errors::ExchangeFailed, /502/)
     end
 
+    it "scrubs Slack tokens out of the non-200 error message" do
+      leaky = '{"note":"leaked xoxp-1234567890-SUPERSECRETVALUE9999 oops"}'
+      stub_request(:post, endpoint).to_return(status: 500, body: leaky)
+
+      expect { described_class.call(**args) }.to raise_error(
+        SlackStatusCli::Oauth::Errors::ExchangeFailed
+      ) do |error|
+        expect(error.message).to include("xox?-…9999")
+        expect(error.message).not_to include("xoxp-1234567890-SUPERSECRETVALUE9999")
+      end
+    end
+
     it "raises ExchangeFailed when ok:true but the access_token is missing" do
       stub_request(:post, endpoint)
         .to_return(status: 200, body: build_oauth_access_response(token: nil).to_json)

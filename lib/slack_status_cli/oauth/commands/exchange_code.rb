@@ -24,7 +24,7 @@ module SlackStatusCli
         def call
           response = post
           unless response.is_a?(Net::HTTPSuccess)
-            raise Errors::ExchangeFailed, "Slack HTTP #{response.code}: #{response.body.to_s.strip[0, 200]}"
+            raise Errors::ExchangeFailed, "Slack HTTP #{response.code}: #{scrubbed_excerpt(response.body)}"
           end
 
           payload = JSON.parse(response.body)
@@ -48,6 +48,12 @@ module SlackStatusCli
         private
 
         attr_reader :code, :client_id, :client_secret, :redirect_uri
+
+        # Slack's response body can carry xox*-tokens, so scrub before it ever
+        # reaches an exception message that might land in logs/STDERR.
+        def scrubbed_excerpt(body)
+          SecretScrubber.call(text: body.to_s.strip).to_s[0, 200]
+        end
 
         def post
           uri = URI(ACCESS_URL)
