@@ -65,5 +65,21 @@ RSpec.describe SlackStatusCli::Oauth::Commands::ExchangeCode do
       expect { described_class.call(**args) }
         .to raise_error(SlackStatusCli::Oauth::Errors::ExchangeFailed, /502/)
     end
+
+    it "raises ExchangeFailed when ok:true but the access_token is missing" do
+      stub_request(:post, endpoint)
+        .to_return(status: 200, body: build_oauth_access_response(token: nil).to_json)
+
+      expect { described_class.call(**args) }
+        .to raise_error(SlackStatusCli::Oauth::Errors::ExchangeFailed, /no authed_user.access_token/)
+    end
+
+    it "raises ExchangeFailed when ok:true but the access_token is blank" do
+      stub_request(:post, endpoint)
+        .to_return(status: 200, body: build_oauth_access_response(token: "").to_json)
+
+      expect { described_class.call(**args) }
+        .to raise_error(SlackStatusCli::Oauth::Errors::ExchangeFailed, /no authed_user.access_token/)
+    end
   end
 end
