@@ -79,6 +79,10 @@ module SlackStatusCli
     module Commands
       autoload :ExchangeCode, "slack_status_cli/oauth/commands/exchange_code"
     end
+
+    module Views
+      autoload :SuccessPage, "slack_status_cli/oauth/views/success_page"
+    end
   end
 
   module Music
