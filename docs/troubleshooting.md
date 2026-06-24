@@ -38,6 +38,6 @@ ruby slack_status.rb doctor --profile <name>
 
 ## OAuth helper getting stuck
 
-- The listener binds `127.0.0.1:53682`. If another process is using that port, `setup` will fail with `Address already in use`. Kill the squatter or change the port (currently hardcoded in [`../lib/oauth_helper.rb`](../lib/oauth_helper.rb)).
+- The listener binds `127.0.0.1:53682`. If another process is using that port, `setup` will fail with `Address already in use`. Kill the squatter or change the port (currently hardcoded at the `run_setup` call site in [`../slack_status.rb`](../slack_status.rb), passed to [`Oauth::Commands::WaitForCallback`](../lib/slack_status_cli/oauth/commands/wait_for_callback.rb)).
 - The listener has a 2-minute timeout. If your browser is slow or you closed the tab, re-run `setup --rotate`.
 - State mismatch (CSRF guard) means Slack returned a different `state` than we sent. Re-run; if it persists, your browser may be replaying an old authorize URL.

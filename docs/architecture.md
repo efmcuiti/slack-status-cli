@@ -10,9 +10,8 @@ Project layout, the token-resolver design, and a few "we considered X" notes so 
 ├── Gemfile                      # Minimal: webrick (extracted from stdlib in Ruby 3.0)
 ├── lib/
 │   ├── slack_status_cli.rb      # Root namespace + autoload entry point for the Callable pods
-│   ├── slack_status_cli/        # Callable pods: slack/, music/, tokens/ (+ callable.rb, secret_scrubber.rb)
+│   ├── slack_status_cli/        # Callable pods: slack/, music/, tokens/, oauth/ (+ callable.rb, secret_scrubber.rb)
 │   ├── cli_prompt.rb            # Interactive UX helpers ([Y/n], secret input, emoji progress, scrub_secrets)
-│   ├── oauth_helper.rb          # WEBrick one-shot OAuth listener + oauth.v2.access exchange
 │   └── emoji_migrator.rb        # Emoji export helper (migrate-emojis subcommand)
 ├── docs/
 │   ├── setup.md                 # Slack App + manifest, prerequisites, setup walkthrough
