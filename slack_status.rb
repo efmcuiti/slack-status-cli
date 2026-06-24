@@ -131,8 +131,6 @@ end
 # --- subcommands ---
 
 def run_setup(options)
-  require 'oauth_helper'
-
   profile = effective_profile(options)
   config_path = options[:config_path] || DEFAULT_CONFIG_PATH
   config = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: config_path)
@@ -165,15 +163,20 @@ def run_setup(options)
   end
 
   CliPrompt.step(3, total_steps, "OAuth install")
-  helper = OAuthHelper.new(client_id: client_id, client_secret: client_secret)
-  CliPrompt.browser("Opening #{helper.authorize_url[0, 80]}… in your browser.")
-  CliPrompt.info("Listening on #{helper.redirect_uri} (2 min timeout)…")
-  open_in_browser(helper.authorize_url)
-
   result =
     begin
-      helper.run
-    rescue OAuthHelper::Error => e
+      SlackStatusCli::Oauth::Commands::Install.call(
+        client_id: client_id,
+        client_secret: client_secret,
+        scopes: %w[users.profile:write emoji:read],
+        port: 53682,
+        timeout: 120,
+      ) do |authorize_url:, redirect_uri:|
+        CliPrompt.browser("Opening #{authorize_url[0, 80]}… in your browser.")
+        CliPrompt.info("Listening on #{redirect_uri} (2 min timeout)…")
+        open_in_browser(authorize_url)
+      end
+    rescue SlackStatusCli::Oauth::Errors::Error => e
       CliPrompt.fail("OAuth flow failed: #{CliPrompt.scrub_secrets(e.message)}")
       exit 1
     end
