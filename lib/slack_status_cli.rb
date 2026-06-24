@@ -78,6 +78,7 @@ module SlackStatusCli
 
     module Commands
       autoload :ExchangeCode, "slack_status_cli/oauth/commands/exchange_code"
+      autoload :WaitForCallback, "slack_status_cli/oauth/commands/wait_for_callback"
     end
 
     module Views
