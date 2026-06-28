@@ -98,4 +98,15 @@ module SlackStatusCli
       autoload :CurrentTrack, "slack_status_cli/music/queries/current_track"
     end
   end
+
+  module EmojiMigration
+    autoload :Errors, "slack_status_cli/emoji_migration/errors"
+
+    module Queries
+      autoload :FilteredEntries, "slack_status_cli/emoji_migration/queries/filtered_entries"
+      autoload :ExtensionFor, "slack_status_cli/emoji_migration/queries/extension_for"
+      autoload :SanitizeFilename, "slack_status_cli/emoji_migration/queries/sanitize_filename"
+      autoload :HumanBytes, "slack_status_cli/emoji_migration/queries/human_bytes"
+    end
+  end
 end
