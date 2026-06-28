@@ -181,7 +181,7 @@ def run_setup(options)
       exit 1
     end
 
-  CliPrompt.done("Received authorization code; exchanging for user token…")
+  CliPrompt.done("Exchanged authorization code for a user token.")
   CliPrompt.done("Got #{redacted_token(result[:token])} (scope=#{result[:scope]}, team=#{result[:team_name]})")
 
   CliPrompt.step(4, total_steps, "Persist the token")
