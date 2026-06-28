@@ -1,0 +1,26 @@
+# Bundler / RubyGems
+/.bundle/
+/vendor/bundle/
+
+# Guard against a gem install tree being dropped into the repo root
+# (happens when GEM_HOME / BUNDLE_PATH is accidentally pointed at ".")
+/bin/
+/build_info/
+/cache/
+/doc/
+/extensions/
+/gems/
+/plugins/
+/specifications/
+
+# Test / coverage artifacts
+/coverage/
+/.rspec_status
+
+# Local env / secrets
+.env
+.env.*
+*.local
+
+# OS / editor cruft
+.DS_Store
