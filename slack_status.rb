@@ -16,7 +16,13 @@ if File.exist?(File.join(__dir__, "Gemfile.lock"))
     # directory, so `ruby /path/to/slack_status.rb` run from elsewhere would
     # miss our bundle and could reintroduce the webrick LoadError.
     ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "Gemfile")
-    require 'bundler/setup'
+    # Activate only the :default group. `require 'bundler/setup'` would pull in
+    # every group (including :test), forcing rspec/webmock/simplecov to be
+    # installed just to run the CLI — and on a missing gem it prints and exits
+    # the process before the rescue below can fall back. `Bundler.setup` raises
+    # a rescuable error instead, so the ambient-gem fallback still works.
+    require 'bundler'
+    Bundler.setup(:default)
   rescue LoadError, StandardError
     # Bundler unavailable or the bundle isn't installed — rely on ambient gems.
   end
