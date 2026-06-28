@@ -25,6 +25,36 @@ Project layout, the token-resolver design, and a few "we considered X" notes so 
 └── README.md
 ```
 
+## Callable conventions
+
+Business logic lives in small, single-purpose **Callable** objects under `lib/slack_status_cli/<pod>/` — `queries/` read and return a value, `commands/` perform a side effect. Each exposes one public entry point, `.call`, and nothing else. The following conventions keep every callable shaped the same way; `lib/slack_status_cli/callable.rb` is the canonical reference and `Queries::FilteredEntries` a representative example.
+
+- **`extend Callable`, not `include`.** The `Callable` module defines an instance-style `call` that becomes the class method via `extend`. The class method forwards args **and the block** explicitly — `new(*args, **kwargs).call(&block)` — never the terser `new(...).call`, which silently hands the block to `initialize` (where it is dropped) instead of to `#call`. Orchestrators like `Oauth::Commands::Install` rely on the block reaching `#call`.
+- **Private `attr_reader` for constructor params.** `initialize` assigns each keyword to an `@ivar`; everything below it reads through a `private attr_reader` rather than touching the raw `@ivar`. This keeps the inputs named, read-only, and trivially stubbable in specs.
+
+```ruby
+class SanitizeFilename
+  extend Callable
+
+  def initialize(name:)
+    @name = name
+  end
+
+  def call
+    name.to_s.gsub(UNSAFE, "_")
+  end
+
+  private
+
+  attr_reader :name
+end
+```
+
+- **Each pod owns its error vocabulary.** A pod defines its own `Errors` module with a base `Error < StandardError` plus specific subclasses (e.g. `EmojiMigration::Errors::MissingScope`), and raises those rather than a bare `RuntimeError`/`StandardError`. Callers rescue the pod's base `Error` to scope failure handling.
+- **`::`-qualify top-level stdlib constants** inside a namespaced pod (`::File`, `::FileUtils`, `::Net::HTTP`) so a future same-named constant in the namespace can never shadow the standard library by accident.
+- **Freeze string constants** (`FILENAME = "skipped.json".freeze`, `UNSAFE = /.../.freeze`) so shared literals can't be mutated in place.
+- **Never log secret values.** Print the *source* of a resolved token, not the value (`resolved from dashlane:dl://...`), and route any caught exception through `CliPrompt.scrub_secrets`, which replaces `xox[a-z]-…` patterns with `xox?-…XXXX`. A real token in any log line is a bug.
+
 ## Token resolver
 
 `SlackStatusCli::Tokens::Queries::ResolveToken.call(profile:, cli_token:, config_path:)` walks a fixed precedence chain and returns `{ token:, source:, profile: }`. First non-empty wins; no silent fallbacks.
