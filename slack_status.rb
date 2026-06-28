@@ -2,6 +2,21 @@
 
 $LOAD_PATH.unshift(File.join(__dir__, "lib"))
 
+# Activate the pinned gem set when run from a checkout. The CLI is invoked as a
+# plain `ruby slack_status.rb`, which ignores the Gemfile — so the lone bundled
+# gem (`webrick`, dropped from Ruby's stdlib in 3.0) would only load if it
+# happened to sit in the ambient gem path, otherwise `setup` blew up with a raw
+# LoadError the moment it reached the callback listener. Bootstrapping Bundler
+# here makes that deterministic; if Bundler or the install is missing we fall
+# back to ambient gems so a globally-installed webrick still works.
+if File.exist?(File.join(__dir__, "Gemfile.lock"))
+  begin
+    require 'bundler/setup'
+  rescue LoadError, StandardError
+    # Bundler unavailable or the bundle isn't installed — rely on ambient gems.
+  end
+end
+
 require 'json'
 require 'optparse'
 
