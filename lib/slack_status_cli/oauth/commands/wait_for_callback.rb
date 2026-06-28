@@ -47,6 +47,10 @@ module SlackStatusCli
 
           begin
             server.start
+          rescue Errors::Error
+            raise
+          rescue StandardError => e
+            raise Errors::Error, "OAuth listener failed: #{e.message}"
           ensure
             timer.kill if timer.alive?
             restore_int(previous_int)
@@ -94,7 +98,7 @@ module SlackStatusCli
           raise Errors::PortBusy, <<~MSG.strip
             Port #{port} is already in use on 127.0.0.1.
             Most likely a previous `setup` run is still alive. Find it and kill it:
-              lsof -nP -iTCP:#{port} -sTCP:LISTEN -t | xargs -r kill
+              kill $(lsof -nP -iTCP:#{port} -sTCP:LISTEN -t)
             Then re-run: ruby slack_status.rb setup --profile <name> --rotate
           MSG
         end
