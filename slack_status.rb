@@ -409,7 +409,6 @@ def run_doctor(options)
 end
 
 def run_migrate_emojis(options)
-  require 'emoji_migrator'
   require 'time'
 
   from = options[:from]
@@ -452,18 +451,18 @@ def run_migrate_emojis(options)
 
   out_dir = options[:out] || "./emoji-export-#{from}-#{Time.now.strftime("%Y%m%d-%H%M%S")}"
   CliPrompt.step(2, 4, "Downloading images to #{out_dir}")
-  migrator = EmojiMigrator.new(
+  result = SlackStatusCli::EmojiMigration::Commands::Run.call(
     emoji_map: emoji_map,
     out_dir: out_dir,
     filter: options[:filter],
-    logger: ->(msg) { CliPrompt.info(msg) },
-  ).run
+    logger: CliPrompt,
+  )
 
   CliPrompt.done(
-    "Downloaded #{migrator.downloaded.size} image#{migrator.downloaded.size == 1 ? "" : "s"} " \
-    "(#{format("%.1f KB", migrator.total_bytes / 1024.0)}), " \
-    "#{migrator.aliases.size} alias#{migrator.aliases.size == 1 ? "" : "es"} (see aliases.json), " \
-    "#{migrator.skipped.size} skipped."
+    "Downloaded #{result.downloaded.size} image#{result.downloaded.size == 1 ? "" : "s"} " \
+    "(#{format("%.1f KB", result.total_bytes / 1024.0)}), " \
+    "#{result.aliases.size} alias#{result.aliases.size == 1 ? "" : "es"} (see aliases.json), " \
+    "#{result.skipped.size} skipped."
   )
 
   admin_url = nil
