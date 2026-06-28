@@ -23,7 +23,7 @@ Full prerequisites (Ruby 3, `nowplaying-cli`, optional `dcli` for Dashlane) live
 
 ## Documentation
 
-- [Setup](docs/setup.md) — Slack App + manifest, OAuth helper, profiles, prerequisites.
+- [Setup](docs/setup.md) — Slack App + manifest, OAuth install flow, profiles, prerequisites.
 - [Security](docs/security.md) — token storage strategies, Dashlane integration, threat model, rotation.
 - [Usage](docs/usage.md) — full CLI reference: flags, modes, subcommands, expiration semantics.
 - [Musical Myth Mode](docs/musical-myth.md) — now-playing detection, adaptive cadence, fallbacks, caveats.
