@@ -15,13 +15,12 @@ module SlackStatusCli
       class Install
         extend Callable
 
-        def initialize(client_id:, client_secret:, scopes:, port:, timeout:, logger: nil)
+        def initialize(client_id:, client_secret:, scopes:, port:, timeout:)
           @client_id = client_id
           @client_secret = client_secret
           @scopes = scopes
           @port = port
           @timeout = timeout
-          @logger = logger
         end
 
         def call
@@ -49,7 +48,7 @@ module SlackStatusCli
 
         private
 
-        attr_reader :client_id, :client_secret, :scopes, :port, :timeout, :logger
+        attr_reader :client_id, :client_secret, :scopes, :port, :timeout
       end
     end
   end
