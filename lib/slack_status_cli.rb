@@ -113,6 +113,7 @@ module SlackStatusCli
       autoload :DownloadImage, "slack_status_cli/emoji_migration/commands/download_image"
       autoload :WriteAliases, "slack_status_cli/emoji_migration/commands/write_aliases"
       autoload :WriteSkipped, "slack_status_cli/emoji_migration/commands/write_skipped"
+      autoload :Run, "slack_status_cli/emoji_migration/commands/run"
     end
   end
 end
