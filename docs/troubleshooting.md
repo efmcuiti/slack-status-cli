@@ -36,7 +36,7 @@ ruby slack_status.rb doctor --profile <name>
 - `--verbose` prints the **source** of the resolved token to stderr (e.g. `[slack-status-cli] token resolved from dashlane:dl://slack-status-cli/work (profile=work)`). It never prints the value.
 - Any caught exception is passed through `CliPrompt.scrub_secrets`, which substitutes `xox[a-z]-…` patterns with `xox?-…XXXX`. If you spot a real token in any log line, that's a bug — please file an issue with the trace.
 
-## OAuth helper getting stuck
+## OAuth install (`setup`) getting stuck
 
 - The listener binds `127.0.0.1:53682`. If another process is using that port, `setup` will fail with `Address already in use`. Kill the squatter or change the port (currently hardcoded at the `run_setup` call site in [`../slack_status.rb`](../slack_status.rb), passed to [`Oauth::Commands::WaitForCallback`](../lib/slack_status_cli/oauth/commands/wait_for_callback.rb)).
 - The listener has a 2-minute timeout. If your browser is slow or you closed the tab, re-run `setup --rotate`.
