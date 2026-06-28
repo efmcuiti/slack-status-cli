@@ -89,14 +89,18 @@ module SlackStatusCli
         def build_server
           WEBrick::HTTPServer.new(
             Port: port,
-            BindAddress: "127.0.0.1",
+            # Bind to "localhost" (both 127.0.0.1 and ::1), not literal
+            # 127.0.0.1: the redirect URI is http://localhost/callback, and on
+            # IPv6-first systems the browser may hit ::1. Still loopback-only,
+            # so off-host callers can't race the callback.
+            BindAddress: "localhost",
             ReuseAddr: true,
             Logger: WEBrick::Log.new(File::NULL),
             AccessLog: []
           )
         rescue Errno::EADDRINUSE
           raise Errors::PortBusy, <<~MSG.strip
-            Port #{port} is already in use on 127.0.0.1.
+            Port #{port} is already in use on localhost.
             Most likely a previous `setup` run is still alive. Find it and kill it:
               kill $(lsof -nP -iTCP:#{port} -sTCP:LISTEN -t)
             Then re-run: ruby slack_status.rb setup --profile <name> --rotate
