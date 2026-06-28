@@ -108,5 +108,11 @@ module SlackStatusCli
       autoload :SanitizeFilename, "slack_status_cli/emoji_migration/queries/sanitize_filename"
       autoload :HumanBytes, "slack_status_cli/emoji_migration/queries/human_bytes"
     end
+
+    module Commands
+      autoload :DownloadImage, "slack_status_cli/emoji_migration/commands/download_image"
+      autoload :WriteAliases, "slack_status_cli/emoji_migration/commands/write_aliases"
+      autoload :WriteSkipped, "slack_status_cli/emoji_migration/commands/write_skipped"
+    end
   end
 end
