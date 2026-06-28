@@ -24,7 +24,6 @@ module SlackStatusCli
           server = build_server
           outcome = nil
           cancelled = false
-          timed_out = false
 
           server.mount_proc("/callback") do |req, res|
             outcome = Queries::HandleCallbackRequest.call(params: req.query, expected_state: expected_state)
@@ -35,7 +34,6 @@ module SlackStatusCli
 
           timer = Thread.new do
             sleep timeout
-            timed_out = true
             server.shutdown
           end
 
@@ -55,7 +53,10 @@ module SlackStatusCli
           end
 
           raise Errors::Error, "OAuth flow cancelled (Ctrl+C)" if cancelled
-          raise Errors::Timeout, "OAuth callback timed out after #{timeout}s" if timed_out || outcome.nil?
+          # `outcome` is the authoritative signal a callback was handled, so a
+          # callback landing right at the timeout boundary is never lost to the
+          # timer thread's shutdown.
+          raise Errors::Timeout, "OAuth callback timed out after #{timeout}s" if outcome.nil?
 
           case outcome[:error]
           when nil
