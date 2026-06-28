@@ -17,13 +17,15 @@ module SlackStatusCli
         end
 
         def call
-          from_url = File.extname(URI(@url.to_s).path).delete_prefix(".").downcase
+          from_url = ::File.extname(URI(url.to_s).path).delete_prefix(".").downcase
           return from_url if KNOWN_SUFFIXES.include?(from_url)
 
-          sniff(@body.to_s.b)
+          sniff(body.to_s.b)
         end
 
         private
+
+        attr_reader :url, :body
 
         def sniff(bytes)
           case bytes[0, 8]

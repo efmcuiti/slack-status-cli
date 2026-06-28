@@ -15,12 +15,16 @@ module SlackStatusCli
         end
 
         def call
-          return "#{@bytes} B" if @bytes < KIB
-          return format("%.1f KB", @bytes / KIB.to_f) if @bytes < MIB
-          return format("%.1f MB", @bytes / MIB.to_f) if @bytes < GIB
+          return "#{bytes} B" if bytes < KIB
+          return format("%.1f KB", bytes / KIB.to_f) if bytes < MIB
+          return format("%.1f MB", bytes / MIB.to_f) if bytes < GIB
 
-          format("%.1f GB", @bytes / GIB.to_f)
+          format("%.1f GB", bytes / GIB.to_f)
         end
+
+        private
+
+        attr_reader :bytes
       end
     end
   end
