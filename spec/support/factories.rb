@@ -7,6 +7,16 @@ module Factories
     { "global" => global, "profiles" => profiles }
   end
 
+  # Mirrors Slack's `emoji.list` shape: real emoji map to image URLs, while
+  # alias entries map to "alias:<target>" strings. `aliases:` is a
+  # {name => target_name} hash that is encoded into the alias form for you.
+  def build_emoji_map(real: { "phoenix_ash" => "https://emoji.slack-edge.com/T123/phoenix_ash/abc.png" }, aliases: {})
+    map = {}
+    real.each { |name, url| map[name] = url }
+    aliases.each { |name, target| map[name] = "alias:#{target}" }
+    map
+  end
+
   def build_callback_params(code: "auth-code", state: "state", error: nil)
     params = {}
     params["code"] = code unless code.nil?
