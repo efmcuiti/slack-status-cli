@@ -11,6 +11,11 @@ $LOAD_PATH.unshift(File.join(__dir__, "lib"))
 # back to ambient gems so a globally-installed webrick still works.
 if File.exist?(File.join(__dir__, "Gemfile.lock"))
   begin
+    # Pin BUNDLE_GEMFILE to this checkout's Gemfile so activation is
+    # CWD-independent: Bundler otherwise searches up from the working
+    # directory, so `ruby /path/to/slack_status.rb` run from elsewhere would
+    # miss our bundle and could reintroduce the webrick LoadError.
+    ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "Gemfile")
     require 'bundler/setup'
   rescue LoadError, StandardError
     # Bundler unavailable or the bundle isn't installed — rely on ambient gems.
