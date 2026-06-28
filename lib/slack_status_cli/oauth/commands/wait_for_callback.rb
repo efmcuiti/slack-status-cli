@@ -23,6 +23,8 @@ module SlackStatusCli
         def call
           server = build_server
           outcome = nil
+          cancelled = false
+          timed_out = false
 
           server.mount_proc("/callback") do |req, res|
             outcome = Queries::HandleCallbackRequest.call(params: req.query, expected_state: expected_state)
@@ -31,17 +33,28 @@ module SlackStatusCli
             Thread.new { sleep 0.2; server.shutdown }
           end
 
-          timed_out = false
           timer = Thread.new do
             sleep timeout
             timed_out = true
             server.shutdown
           end
 
-          trap("INT") { server.shutdown }
-          server.start
-          timer.kill if timer.alive?
+          # Capture the prior INT handler so we can restore it: this is a
+          # one-shot server and the surrounding `setup` flow continues after we
+          # return, so leaving our handler installed would break Ctrl+C later.
+          previous_int = trap("INT") do
+            cancelled = true
+            server.shutdown
+          end
 
+          begin
+            server.start
+          ensure
+            timer.kill if timer.alive?
+            restore_int(previous_int)
+          end
+
+          raise Errors::Error, "OAuth flow cancelled (Ctrl+C)" if cancelled
           raise Errors::Timeout, "OAuth callback timed out after #{timeout}s" if timed_out || outcome.nil?
 
           case outcome[:error]
@@ -49,14 +62,24 @@ module SlackStatusCli
             { code: outcome[:code], state: outcome[:state] }
           when "state_mismatch"
             raise Errors::StateMismatch, "OAuth state mismatch (CSRF guard)"
+          when "missing_code"
+            raise Errors::Error, "OAuth callback missing `code`"
           else
-            raise Errors::Error, "OAuth callback failed (#{outcome[:error]})"
+            raise Errors::Error, "Slack returned error=#{outcome[:error]}"
           end
         end
 
         private
 
         attr_reader :port, :timeout, :expected_state
+
+        def restore_int(previous)
+          if previous.respond_to?(:call)
+            trap("INT", &previous)
+          else
+            trap("INT", previous || "DEFAULT")
+          end
+        end
 
         def build_server
           WEBrick::HTTPServer.new(
