@@ -22,20 +22,22 @@ module SlackStatusCli
 
         def call
           body = fetch
-          extension = Queries::ExtensionFor.call(url: @url, body: body)
-          filename = "#{Queries::SanitizeFilename.call(name: @name)}.#{extension}"
+          extension = Queries::ExtensionFor.call(url: url, body: body)
+          filename = "#{Queries::SanitizeFilename.call(name: name)}.#{extension}"
 
-          ::FileUtils.mkdir_p(@out_dir)
-          path = ::File.join(@out_dir, filename)
+          ::FileUtils.mkdir_p(out_dir)
+          path = ::File.join(out_dir, filename)
           ::File.binwrite(path, body)
 
-          { name: @name, path: path, bytes: body.bytesize, extension: extension }
+          { name: name, path: path, bytes: body.bytesize, extension: extension }
         end
 
         private
 
+        attr_reader :name, :url, :out_dir
+
         def fetch
-          uri = URI(@url)
+          uri = URI(url)
           ::Net::HTTP.start(uri.hostname, uri.port, use_ssl: uri.scheme == "https") do |http|
             http.read_timeout = READ_TIMEOUT
             response = http.get(uri.request_uri)

@@ -14,8 +14,12 @@ module SlackStatusCli
         end
 
         def call
-          @name.to_s.gsub(UNSAFE, "_")
+          name.to_s.gsub(UNSAFE, "_")
         end
+
+        private
+
+        attr_reader :name
       end
     end
   end

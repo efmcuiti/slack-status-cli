@@ -19,11 +19,15 @@ module SlackStatusCli
         end
 
         def call
-          ::FileUtils.mkdir_p(@out_dir)
-          path = Pathname.new(::File.join(@out_dir, FILENAME))
-          path.write(JSON.pretty_generate(@aliases))
+          ::FileUtils.mkdir_p(out_dir)
+          path = Pathname.new(::File.join(out_dir, FILENAME))
+          path.write(JSON.pretty_generate(aliases))
           path
         end
+
+        private
+
+        attr_reader :out_dir, :aliases
       end
     end
   end
