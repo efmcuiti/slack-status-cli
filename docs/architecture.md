@@ -76,7 +76,7 @@ Slack's official `slack` CLI ([api.slack.com/automation/cli](https://api.slack.c
 User tokens are gated behind the OAuth install flow. The realistic automated path is what `setup` does:
 
 1. User creates a Slack App once (one-click via the shipped manifest).
-2. `setup` boots a one-shot WEBrick listener on `127.0.0.1:53682`.
+2. `setup` boots a one-shot WEBrick listener on `localhost:53682` (loopback only — both `127.0.0.1` and `::1`).
 3. Browser opens `https://slack.com/oauth/v2/authorize?...&user_scope=users.profile:write&state=...`.
 4. Slack redirects to `http://localhost:53682/callback?code=...&state=...`.
 5. `setup` POSTs to `oauth.v2.access` with HTTP Basic (client_id:client_secret).

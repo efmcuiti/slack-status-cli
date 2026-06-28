@@ -16,8 +16,8 @@
 #   - No `features.bot_user` block: this app does not have a bot identity, so
 #     declaring one without bot scopes would fail manifest validation with
 #     "Bot user requires bot scope".
-#   - The redirect URL points at localhost; our OAuth helper boots a one-shot
-#     listener on 127.0.0.1:53682 to capture the install callback.
+#   - The redirect URL points at localhost; our OAuth flow boots a one-shot
+#     listener on localhost:53682 (loopback) to capture the install callback.
 #   - Change `name` / `description` / `background_color` to taste; they're
 #     purely cosmetic in the Slack app directory.
 
