@@ -105,6 +105,11 @@ module SlackStatusCli
               kill $(lsof -nP -iTCP:#{port} -sTCP:LISTEN -t)
             Then re-run: ruby slack_status.rb setup --profile <name> --rotate
           MSG
+        rescue StandardError => e
+          # Anything else (e.g. SocketError if `localhost` won't resolve) must
+          # still honor the documented Errors::* contract rather than leaking a
+          # raw exception/stack trace to the CLI.
+          raise Errors::Error, "OAuth listener could not start: #{e.message}"
         end
       end
     end
