@@ -36,8 +36,8 @@ ruby slack_status.rb doctor --profile <name>
 - `--verbose` prints the **source** of the resolved token to stderr (e.g. `[slack-status-cli] token resolved from dashlane:dl://slack-status-cli/work (profile=work)`). It never prints the value.
 - Any caught exception is passed through `CliPrompt.scrub_secrets`, which substitutes `xox[a-z]-…` patterns with `xox?-…XXXX`. If you spot a real token in any log line, that's a bug — please file an issue with the trace.
 
-## OAuth helper getting stuck
+## OAuth install (`setup`) getting stuck
 
-- The listener binds `127.0.0.1:53682`. If another process is using that port, `setup` will fail with `Address already in use`. Kill the squatter or change the port (currently hardcoded in [`../lib/oauth_helper.rb`](../lib/oauth_helper.rb)).
+- The listener binds `localhost:53682` (both `127.0.0.1` and `::1`, loopback only). If another process is using that port, `setup` fails with `Port 53682 is already in use on localhost.` (raised as `PortBusy`, with a `kill $(lsof …)` remediation). Kill the squatter or change the port (currently hardcoded at the `run_setup` call site in [`../slack_status.rb`](../slack_status.rb), passed to [`Oauth::Commands::WaitForCallback`](../lib/slack_status_cli/oauth/commands/wait_for_callback.rb)).
 - The listener has a 2-minute timeout. If your browser is slow or you closed the tab, re-run `setup --rotate`.
 - State mismatch (CSRF guard) means Slack returned a different `state` than we sent. Re-run; if it persists, your browser may be replaying an old authorize URL.

@@ -2,6 +2,26 @@
 
 $LOAD_PATH.unshift(File.join(__dir__, "lib"))
 
+# Activate the pinned gem set when run from a checkout. The CLI is invoked as a
+# plain `ruby slack_status.rb`, which ignores the Gemfile — so the lone bundled
+# gem (`webrick`, dropped from Ruby's stdlib in 3.0) would only load if it
+# happened to sit in the ambient gem path, otherwise `setup` blew up with a raw
+# LoadError the moment it reached the callback listener. Bootstrapping Bundler
+# here makes that deterministic; if Bundler or the install is missing we fall
+# back to ambient gems so a globally-installed webrick still works.
+if File.exist?(File.join(__dir__, "Gemfile.lock"))
+  begin
+    # Pin BUNDLE_GEMFILE to this checkout's Gemfile so activation is
+    # CWD-independent: Bundler otherwise searches up from the working
+    # directory, so `ruby /path/to/slack_status.rb` run from elsewhere would
+    # miss our bundle and could reintroduce the webrick LoadError.
+    ENV["BUNDLE_GEMFILE"] = File.join(__dir__, "Gemfile")
+    require 'bundler/setup'
+  rescue LoadError, StandardError
+    # Bundler unavailable or the bundle isn't installed — rely on ambient gems.
+  end
+end
+
 require 'json'
 require 'optparse'
 
@@ -131,8 +151,6 @@ end
 # --- subcommands ---
 
 def run_setup(options)
-  require 'oauth_helper'
-
   profile = effective_profile(options)
   config_path = options[:config_path] || DEFAULT_CONFIG_PATH
   config = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: config_path)
@@ -165,20 +183,25 @@ def run_setup(options)
   end
 
   CliPrompt.step(3, total_steps, "OAuth install")
-  helper = OAuthHelper.new(client_id: client_id, client_secret: client_secret)
-  CliPrompt.browser("Opening #{helper.authorize_url[0, 80]}… in your browser.")
-  CliPrompt.info("Listening on #{helper.redirect_uri} (2 min timeout)…")
-  open_in_browser(helper.authorize_url)
-
   result =
     begin
-      helper.run
-    rescue OAuthHelper::Error => e
+      SlackStatusCli::Oauth::Commands::Install.call(
+        client_id: client_id,
+        client_secret: client_secret,
+        scopes: %w[users.profile:write emoji:read],
+        port: 53682,
+        timeout: 120,
+      ) do |authorize_url:, redirect_uri:|
+        CliPrompt.browser("Opening #{authorize_url[0, 80]}… in your browser.")
+        CliPrompt.info("Listening on #{redirect_uri} (2 min timeout)…")
+        open_in_browser(authorize_url)
+      end
+    rescue SlackStatusCli::Oauth::Errors::Error => e
       CliPrompt.fail("OAuth flow failed: #{CliPrompt.scrub_secrets(e.message)}")
       exit 1
     end
 
-  CliPrompt.done("Received authorization code; exchanging for user token…")
+  CliPrompt.done("Exchanged authorization code for a user token.")
   CliPrompt.done("Got #{redacted_token(result[:token])} (scope=#{result[:scope]}, team=#{result[:team_name]})")
 
   CliPrompt.step(4, total_steps, "Persist the token")

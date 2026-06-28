@@ -1,6 +1,6 @@
 # Setup
 
-End-to-end walkthrough: install the prerequisites, create the Slack App from the shipped manifest, run the OAuth helper, and verify with `doctor`.
+End-to-end walkthrough: install the prerequisites, create the Slack App from the shipped manifest, run the OAuth install flow (`setup`), and verify with `doctor`.
 
 ## Prerequisites
 
@@ -24,7 +24,7 @@ The manifest pre-fills:
 
 - `user_scope: users.profile:write` — required to edit your own status.
 - `user_scope: emoji:read` — required by [`migrate-emojis`](usage.md#migrate-emojis); not used by any status mode. Listing/downloading only — never writes.
-- `redirect_url: http://localhost:53682/callback` — matches what the OAuth helper listens on.
+- `redirect_url: http://localhost:53682/callback` — matches what the `setup` listener listens on.
 
 > **Upgrading existing installs.** If your app was created before `emoji:read` was added to the manifest, the existing token won't have it. Re-run `setup --profile <name> --rotate` to re-OAuth and pick up the new scope (the manifest itself updates automatically when you "Update from manifest" in the Slack App settings UI).
 

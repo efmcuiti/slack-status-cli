@@ -44,8 +44,12 @@ module SlackStatusCli
     #   This is equivalent to:
     #
     #   MyService.new(param1, param2).call
-    def call(...)
-      new(...).call
+    # A bare `new(...).call` would hand any block to the initializer (which
+    # ignores it) instead of to the operation, silently dropping it. Split the
+    # forwarding so positional/keyword args build the instance and the block
+    # reaches `#call`, where orchestrators like Oauth::Commands::Install yield.
+    def call(*args, **kwargs, &block)
+      new(*args, **kwargs).call(&block)
     end
   end
 end

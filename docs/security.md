@@ -46,7 +46,7 @@ If `dcli` isn't installed or the vault is locked, the resolver falls through to 
 - **`FileBackend` perm-guard.** Writing a token via `file` backend chmods the file `0600`. Reading refuses (and falls through) if `(stat.mode & 0o077) != 0`, so a misconfigured permission can't silently leak the secret.
 - **Validate at setup + on demand.** `doctor` calls `auth.test` to fail fast with a useful error code (`not_authed`, `missing_scope`, etc.) instead of letting `users.profile.set` return cryptic errors later.
 - **No token in logs.** `--verbose` prints the *source* of the resolved token (`resolved from dashlane:dl://slack-status-cli/work`) but never the value. Any caught exception passes through `CliPrompt.scrub_secrets` which replaces `xox[a-z]-…` patterns with `xox?-…XXXX`.
-- **State + loopback guard on OAuth.** The helper generates a 16-byte hex `state`, includes it in the authorize URL, and rejects callbacks where it doesn't match. The WEBrick listener binds to `127.0.0.1` (not `0.0.0.0`) so other hosts on the LAN can't race the callback.
+- **State + loopback guard on OAuth.** `Oauth::Commands::Install` generates a 16-byte hex `state` and includes it in the authorize URL; `Queries::HandleCallbackRequest` rejects callbacks where it doesn't match. The WEBrick listener binds to `localhost` loopback only — both `127.0.0.1` and `::1`, never `0.0.0.0` — so other hosts on the LAN can't race the callback.
 - **Per-profile isolation.** Each profile has its own backend entry; compromising one workspace's token doesn't leak others. Profiles can mix backends (work in Dashlane, personal in Keychain).
 - **One-shot listener.** WEBrick shuts down after the first successful callback (or a 2-minute timeout). Reduces the window for a malicious local process to hit `/callback`.
 
@@ -59,7 +59,7 @@ If `dcli` isn't installed or the vault is locked, the resolver falls through to 
 | `ps`/`top` shows args | Same — secret-bearing CLI flags are visible in process listings |
 | Lost laptop | Dashlane / Keychain are encrypted at rest; file backend relies on FileVault |
 | Compromised single profile | Per-profile tokens limit blast radius; `auth.revoke` + `setup --rotate` to rebuild |
-| Malicious local process | OAuth listener binds 127.0.0.1 only; `state` validates the callback origin; one-shot listener |
+| Malicious local process | OAuth listener binds loopback only (`localhost`); `state` validates the callback origin; one-shot listener |
 
 ## Rotation
 
