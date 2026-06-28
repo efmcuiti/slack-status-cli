@@ -86,7 +86,7 @@ Community tools that "auto-extract" `xoxc`/`xoxd` from the Slack web client exis
 
 ## Why WEBrick
 
-WEBrick is the simplest HTTP server that ships with Ruby and was removed from stdlib in Ruby 3.0. The OAuth helper needs exactly one short-lived `/callback` handler — no need for Puma/Sinatra/etc. Pinning the `webrick` gem (`~> 1.8`) in the `Gemfile` keeps the dep surface tiny.
+WEBrick is the simplest HTTP server that ships with Ruby and was removed from stdlib in Ruby 3.0. The OAuth install flow needs exactly one short-lived `/callback` handler — no need for Puma/Sinatra/etc. Pinning the `webrick` gem (`~> 1.8`) in the `Gemfile` keeps the dep surface tiny.
 
 ## Conventions for `docs/`
 
