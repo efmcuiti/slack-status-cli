@@ -19,7 +19,7 @@ module SlackStatusCli
         def call
           return if url.nil? || url.to_s.empty?
 
-          runner.capture3(launcher, url.to_s)
+          runner.capture3(*launcher, url.to_s)
           nil
         end
 
@@ -27,11 +27,14 @@ module SlackStatusCli
 
         attr_reader :url, :runner, :platform
 
+        # `start` is a cmd.exe built-in, not an executable, so Windows needs
+        # `cmd /c start "" <url>` (the empty "" is the window-title arg `start`
+        # would otherwise steal the URL for).
         def launcher
           case platform
-          when /darwin/ then "open"
-          when /mswin|mingw|cygwin/ then "start"
-          else "xdg-open"
+          when /darwin/ then ["open"]
+          when /mswin|mingw|cygwin/ then ["cmd", "/c", "start", ""]
+          else ["xdg-open"]
           end
         end
       end

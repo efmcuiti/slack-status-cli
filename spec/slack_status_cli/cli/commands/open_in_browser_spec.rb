@@ -14,6 +14,12 @@ RSpec.describe SlackStatusCli::Cli::Commands::OpenInBrowser do
       expect(runner.calls.first).to eq(["xdg-open", "https://slack.test"])
     end
 
+    it "uses `cmd /c start` with an empty title on Windows" do
+      runner = FakeShellRunner.new.stub(/cmd/, stdout: "")
+      described_class.call(url: "https://slack.test", runner: runner, platform: "x64-mingw-ucrt")
+      expect(runner.calls.first).to eq(["cmd", "/c", "start", "", "https://slack.test"])
+    end
+
     it "is a no-op when the URL is nil" do
       runner = FakeShellRunner.new
       expect(described_class.call(url: nil, runner: runner)).to be_nil
