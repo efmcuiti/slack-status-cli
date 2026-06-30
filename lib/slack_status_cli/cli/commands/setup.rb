@@ -1,0 +1,190 @@
+require "cli_prompt"
+
+module SlackStatusCli
+  module Cli
+    module Commands
+      # Orchestrates the `setup` subcommand — the user-token OAuth install flow.
+      # Resolves the Slack App client_id / client_secret (prompting only when the
+      # pure resolvers come up empty), then either persists global defaults
+      # (--global) or runs the OAuth install and stores the resulting token under
+      # the active profile. Interactive input goes through the injected `prompt`;
+      # progress is written to `output`. Missing-but-required input raises a Cli
+      # pod Error instead of calling exit, leaving process control to the
+      # dispatcher.
+      class Setup
+        extend Callable
+
+        SCOPES = %w[users.profile:write emoji:read].freeze
+        PORT = 53_682
+        TIMEOUT = 120
+        DEFAULT_PROFILE = "default".freeze
+
+        def initialize(
+          options: {},
+          output: $stdout,
+          input: $stdin,
+          env: ENV,
+          prompt: ::CliPrompt,
+          config_loader: Tokens::Queries::LoadConfig,
+          config_writer: Tokens::Commands::WriteConfig,
+          merged_settings: Tokens::Queries::MergedSettings,
+          client_id_resolver: Queries::ResolveClientId,
+          client_secret_resolver: Queries::ResolveClientSecret,
+          backend_resolver: Queries::ResolveBackend,
+          token_checker: Queries::ProfileHasToken,
+          instructions: PrintAppCreationInstructions,
+          oauth_installer: Oauth::Commands::Install,
+          browser: OpenInBrowser,
+          token_persister: PersistProfileToken,
+          global_persister: PersistGlobalDefaults,
+          redactor: Queries::RedactedToken
+        )
+          @options = options || {}
+          @output = output
+          @input = input
+          @env = env
+          @prompt = prompt
+          @config_loader = config_loader
+          @config_writer = config_writer
+          @merged_settings = merged_settings
+          @client_id_resolver = client_id_resolver
+          @client_secret_resolver = client_secret_resolver
+          @backend_resolver = backend_resolver
+          @token_checker = token_checker
+          @instructions = instructions
+          @oauth_installer = oauth_installer
+          @browser = browser
+          @token_persister = token_persister
+          @global_persister = global_persister
+          @redactor = redactor
+        end
+
+        def call
+          config = config_loader.call(path: config_path)
+          client_id = resolve_client_id(config)
+
+          return persist_global(config, client_id) if options[:global]
+
+          client_secret = resolve_client_secret(config)
+          backend = backend_resolver.call(config: config, profile: profile)
+
+          return if existing_token_kept?
+
+          result = install(client_id, client_secret)
+          persist_token(config, backend, client_id, result[:token])
+          output.puts(
+            "Got #{redactor.call(token: result[:token])} " \
+            "(scope=#{result[:scope]}, team=#{result[:team_name]})",
+          )
+          output.puts("Setup complete! Verify with: ruby slack_status.rb doctor --profile #{profile}")
+          nil
+        end
+
+        private
+
+        attr_reader :options, :output, :input, :env, :prompt, :config_loader, :config_writer,
+                    :merged_settings, :client_id_resolver, :client_secret_resolver, :backend_resolver,
+                    :token_checker, :instructions, :oauth_installer, :browser, :token_persister,
+                    :global_persister, :redactor
+
+        def resolve_client_id(config)
+          resolved = presence(client_id_resolver.call(config: config, profile: profile))
+          return resolved if resolved
+
+          instructions.call(output: output)
+          value = presence(prompt.ask("Enter Client ID (from Basic Information):",
+                                       input: input, output: output, non_interactive: options[:non_interactive]))
+          value || raise(Errors::Error, "Client ID is required")
+        end
+
+        def resolve_client_secret(config)
+          resolved = presence(client_secret_resolver.call(config: config, profile: profile))
+          return resolved if resolved
+
+          value = presence(prompt.ask("Enter Client Secret (input hidden):",
+                                      secret: true, input: input, output: output, non_interactive: options[:non_interactive]))
+          value || raise(Errors::Error, "Client Secret is required")
+        end
+
+        def persist_global(config, client_id)
+          backend = backend_resolver.call(config: config, profile: profile)
+          global_persister.call(
+            defaults: { "oauth" => { "client_id" => client_id }, "storage_backend" => backend.to_s },
+            config_path: config_path,
+          )
+          output.puts("Global defaults saved to #{config_path}.")
+          output.puts("Setup complete!")
+          nil
+        end
+
+        def existing_token_kept?
+          return false if options[:rotate]
+          return false unless token_checker.call(profile: profile, config_path: config_path)
+
+          overwrite = prompt.ask_yes_no(
+            "Profile '#{profile}' already has a token. Overwrite?",
+            default: :no, input: input, output: output, non_interactive: options[:non_interactive],
+          )
+          return false if overwrite
+
+          output.puts("Keeping existing token. Use --rotate to force.")
+          true
+        end
+
+        def install(client_id, client_secret)
+          oauth_installer.call(
+            client_id: client_id, client_secret: client_secret,
+            scopes: SCOPES, port: PORT, timeout: TIMEOUT
+          ) do |authorize_url:, redirect_uri:|
+            output.puts("Opening #{authorize_url[0, 80]}… in your browser.")
+            output.puts("Listening on #{redirect_uri} (2 min timeout)…")
+            browser.call(url: authorize_url)
+          end
+        rescue Oauth::Errors::Error => e
+          raise Errors::Error, "OAuth flow failed: #{SecretScrubber.call(text: e.message)}"
+        end
+
+        def persist_token(config, backend, client_id, token)
+          write_profile_backend(config, backend, client_id)
+          settings = merged_settings.call(config: config, profile: profile)
+          written = token_persister.call(
+            profile: profile, token: token, backend_name: backend.to_s, settings: settings,
+          )
+          output.puts("Wrote token to #{written[:location] || written[:source]}.")
+        rescue Tokens::Errors::ManualWriteRequired => e
+          output.puts("Backend `#{backend}` needs a manual step:")
+          e.message.each_line { |line| output.puts("   #{line.chomp}") }
+        end
+
+        def write_profile_backend(config, backend, client_id)
+          config["profiles"] ||= {}
+          config["profiles"][profile] ||= {}
+          config["profiles"][profile]["storage_backend"] = backend.to_s
+
+          global_id = config.dig("global", "oauth", "client_id")
+          if presence(client_id) && client_id != global_id
+            config["profiles"][profile]["oauth"] ||= {}
+            config["profiles"][profile]["oauth"]["client_id"] = client_id
+          end
+
+          config_writer.call(config: config, path: config_path)
+        end
+
+        def config_path
+          options[:config_path] || Tokens::Constants::DEFAULT_CONFIG_PATH
+        end
+
+        def profile
+          options[:profile] || env["SLACK_STATUS_PROFILE"] || DEFAULT_PROFILE
+        end
+
+        def presence(value)
+          return nil if value.nil?
+
+          stripped = value.to_s.strip
+          stripped.empty? ? nil : stripped
+        end
+      end
+    end
+  end
+end
