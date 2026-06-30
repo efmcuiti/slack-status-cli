@@ -21,6 +21,10 @@ module SlackStatusCli
 
           runner.capture3(*launcher, url.to_s)
           nil
+        rescue ::Errno::ENOENT
+          # Opening a browser is best-effort: a missing launcher (e.g. no
+          # xdg-open on a headless box) must not crash setup/orchestration.
+          nil
         end
 
         private

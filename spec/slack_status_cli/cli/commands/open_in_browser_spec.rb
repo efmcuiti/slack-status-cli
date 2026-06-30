@@ -26,6 +26,15 @@ RSpec.describe SlackStatusCli::Cli::Commands::OpenInBrowser do
       expect(runner.calls).to be_empty
     end
 
+    it "is a no-op when the launcher executable is missing (ENOENT)" do
+      missing = Class.new do
+        def capture3(*)
+          raise Errno::ENOENT, "no such file"
+        end
+      end.new
+      expect(described_class.call(url: "https://slack.test", runner: missing, platform: "x86_64-linux")).to be_nil
+    end
+
     it "passes a URL with spaces as a single argv element (no shell injection)" do
       runner = FakeShellRunner.new.stub(/open/, stdout: "")
       described_class.call(url: "https://slack.test/a b", runner: runner, platform: "x86_64-darwin23")
