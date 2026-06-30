@@ -71,7 +71,7 @@ module SlackStatusCli
             o.on("--out DIR", "(migrate-emojis) Output directory (default: ./emoji-export-<from>-<timestamp>)") { |v| options[:out] = v }
             o.on("--filter REGEX", "(migrate-emojis) Only download emoji whose name matches REGEX (case-insensitive)") { |v| options[:filter] = v }
             o.on("--no-open", "(migrate-emojis) Do not open the destination admin URL automatically") { options[:open_browser] = false }
-            o.on("-h", "--help", "Show this help") { puts o; exit 0 }
+            o.on("-h", "--help", "Show this help") { raise Errors::HelpRequested, o.to_s }
           end
         end
       end

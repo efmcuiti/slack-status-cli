@@ -40,5 +40,17 @@ RSpec.describe SlackStatusCli::Cli::Queries::ParseGlobalFlags do
         open_browser: true,
       )
     end
+
+    it "raises HelpRequested carrying the rendered help text for --help" do
+      expect { described_class.call(argv: ["--help"]) }
+        .to raise_error(SlackStatusCli::Cli::Errors::HelpRequested) do |error|
+          expect(error.help_text).to include("Usage: ruby slack_status.rb")
+        end
+    end
+
+    it "raises HelpRequested for the -h alias" do
+      expect { described_class.call(argv: ["-h"]) }
+        .to raise_error(SlackStatusCli::Cli::Errors::HelpRequested)
+    end
   end
 end
