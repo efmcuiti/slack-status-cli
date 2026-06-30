@@ -124,6 +124,7 @@ module SlackStatusCli
       autoload :InstallSignalHandlers, "slack_status_cli/cli/commands/install_signal_handlers"
       autoload :PrintAppCreationInstructions, "slack_status_cli/cli/commands/print_app_creation_instructions"
       autoload :Config, "slack_status_cli/cli/commands/config"
+      autoload :Profiles, "slack_status_cli/cli/commands/profiles"
     end
   end
 
