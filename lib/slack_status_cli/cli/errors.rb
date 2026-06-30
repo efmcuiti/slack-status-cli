@@ -1,0 +1,21 @@
+module SlackStatusCli
+  module Cli
+    # CLI pod error vocabulary. The Cli pod owns its own failure types,
+    # mirroring the Tokens and Oauth pods.
+    module Errors
+      class Error < StandardError; end
+
+      # Raised when the user passes -h/--help. Carries the rendered help text so
+      # the dispatcher can print it and exit, keeping the parser callable free of
+      # I/O and process control.
+      class HelpRequested < Error
+        def initialize(help_text)
+          @help_text = help_text
+          super("help requested")
+        end
+
+        attr_reader :help_text
+      end
+    end
+  end
+end

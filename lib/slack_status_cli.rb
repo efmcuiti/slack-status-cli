@@ -100,6 +100,8 @@ module SlackStatusCli
   end
 
   module Cli
+    autoload :Errors, "slack_status_cli/cli/errors"
+
     module Queries
       autoload :ParseGlobalFlags, "slack_status_cli/cli/queries/parse_global_flags"
       autoload :DottedGet, "slack_status_cli/cli/queries/dotted_get"
