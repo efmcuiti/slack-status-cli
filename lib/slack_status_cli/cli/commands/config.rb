@@ -69,13 +69,16 @@ module SlackStatusCli
           key = args.shift
           raise Errors::Error, "Usage: config set <dotted.key> <value>" if blank?(key)
 
-          value = args.shift
-          raise Errors::Error, "Usage: config set <dotted.key> <value>" if value.nil?
+          raw = args.shift
+          raise Errors::Error, "Usage: config set <dotted.key> <value>" if raw.nil?
 
           config = config_loader.call(path: config_path)
-          setter.call(hash: config, key: key, value: coercer.call(value: value))
+          coerced = coercer.call(value: raw)
+          setter.call(hash: config, key: key, value: coerced)
           config_writer.call(config: config, path: config_path)
-          output.puts("set #{key} = #{value}")
+          # Echo the coerced value (what was actually stored), not the raw string,
+          # so `set x null` / booleans / numbers don't misreport what landed in the config.
+          output.puts("set #{key} = #{coerced.nil? ? "nil" : coerced}")
         end
 
         def config_path

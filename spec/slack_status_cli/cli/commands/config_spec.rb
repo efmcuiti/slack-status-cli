@@ -21,39 +21,6 @@ RSpec.describe SlackStatusCli::Cli::Commands::Config do
     end.new
   end
 
-  # Records the (hash, key, value) it was handed and mutates the hash like the
-  # real DottedSet so the downstream WriteConfig still has something to persist.
-  let(:recording_setter) do
-    Class.new do
-      attr_reader :calls
-      def initialize
-        @calls = []
-      end
-
-      def call(hash:, key:, value:)
-        @calls << { hash: hash, key: key, value: value }
-        hash[key] = value
-        hash
-      end
-    end.new
-  end
-
-  # Records the raw value it was asked to coerce and returns a sentinel so the
-  # spec can prove the orchestrator stores the coerced (not raw) value.
-  let(:recording_coercer) do
-    Class.new do
-      attr_reader :calls
-      def initialize
-        @calls = []
-      end
-
-      def call(value:)
-        @calls << value
-        "COERCED"
-      end
-    end.new
-  end
-
   describe ".call(args: ['path'])" do
     it "prints the config path from options[:config_path]" do
       described_class.call(args: ["path"], options: { config_path: "/tmp/custom.yml" }, output: output)
@@ -119,23 +86,17 @@ RSpec.describe SlackStatusCli::Cli::Commands::Config do
   end
 
   describe ".call(args: ['set', ...])" do
-    it "coerces the value, delegates to the setter, and writes the config" do
+    # Uses the real DottedSet + CoerceScalar (the defaults) so the assertions
+    # validate the production config shape: a dotted key writes a nested hash and
+    # the value is coerced to its scalar type — not a flat key / raw string.
+    it "coerces the value and writes it at the nested dotted key" do
       with_tmp_config do |path:, **|
         SlackStatusCli::Tokens::Commands::WriteConfig.call(config: build_config, path: path)
 
-        described_class.call(
-          args: ["set", "global.timeout", "30"],
-          options: { config_path: path },
-          output: output,
-          coercer: recording_coercer,
-          setter: recording_setter,
-        )
-
-        expect(recording_coercer.calls).to eq(["30"])
-        expect(recording_setter.calls.first).to include(key: "global.timeout", value: "COERCED")
+        described_class.call(args: ["set", "global.timeout", "30"], options: { config_path: path }, output: output)
 
         loaded = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: path)
-        expect(loaded["global.timeout"]).to eq("COERCED")
+        expect(loaded.dig("global", "timeout")).to eq(30)
       end
     end
 
@@ -150,6 +111,16 @@ RSpec.describe SlackStatusCli::Cli::Commands::Config do
         )
 
         expect(output.string).to match(/global\.storage_backend/)
+      end
+    end
+
+    it "echoes the coerced value in the confirmation, not the raw string" do
+      with_tmp_config do |path:, **|
+        SlackStatusCli::Tokens::Commands::WriteConfig.call(config: build_config, path: path)
+
+        described_class.call(args: ["set", "global.flag", "null"], options: { config_path: path }, output: output)
+
+        expect(output.string).to match(/= nil/)
       end
     end
 
