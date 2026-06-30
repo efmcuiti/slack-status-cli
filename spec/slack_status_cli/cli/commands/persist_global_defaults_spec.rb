@@ -34,5 +34,14 @@ RSpec.describe SlackStatusCli::Cli::Commands::PersistGlobalDefaults do
         expect(File.exist?(path)).to be(true)
       end
     end
+
+    it "raises ConfigError when the existing 'global' node is not a mapping" do
+      with_tmp_config do |path:, **|
+        File.write(path, "global: 5\n")
+
+        expect { described_class.call(defaults: { "storage_backend" => "file" }, config_path: path) }
+          .to raise_error(SlackStatusCli::Tokens::Errors::ConfigError, /global/)
+      end
+    end
   end
 end

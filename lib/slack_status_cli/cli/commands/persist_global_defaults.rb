@@ -14,7 +14,12 @@ module SlackStatusCli
 
         def call
           config = Tokens::Queries::LoadConfig.call(path: config_path)
-          config["global"] = deep_merge(config["global"] || {}, defaults)
+          existing = config["global"] || {}
+          unless existing.is_a?(::Hash)
+            raise Tokens::Errors::ConfigError, "config 'global' is not a mapping (got #{existing.class})"
+          end
+
+          config["global"] = deep_merge(existing, defaults)
           Tokens::Commands::WriteConfig.call(config: config, path: config_path)
           nil
         end
