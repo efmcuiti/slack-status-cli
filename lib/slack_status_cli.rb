@@ -127,6 +127,7 @@ module SlackStatusCli
       autoload :Profiles, "slack_status_cli/cli/commands/profiles"
       autoload :Doctor, "slack_status_cli/cli/commands/doctor"
       autoload :MigrateEmojis, "slack_status_cli/cli/commands/migrate_emojis"
+      autoload :RunStatusMode, "slack_status_cli/cli/commands/run_status_mode"
     end
   end
 
