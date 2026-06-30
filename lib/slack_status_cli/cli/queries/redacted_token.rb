@@ -17,14 +17,22 @@ module SlackStatusCli
 
         def call
           return "" if token.nil?
-          return REDACTED if token.length < keep
+          # `keep >= length` (not just `>`) so a token no longer than the kept
+          # prefix is fully redacted rather than printed in the clear.
+          return REDACTED if clamped_keep >= token.length
 
-          "#{token[0, keep]}#{"*" * (token.length - keep)}"
+          "#{token[0, clamped_keep]}#{"*" * (token.length - clamped_keep)}"
         end
 
         private
 
         attr_reader :token, :keep
+
+        # Tolerate a nil / non-numeric / negative `keep` so a safe-to-print
+        # helper never raises mid-log; anything unparseable masks everything.
+        def clamped_keep
+          [Integer(keep, exception: false) || 0, 0].max
+        end
       end
     end
   end
