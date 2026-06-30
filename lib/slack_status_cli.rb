@@ -99,6 +99,19 @@ module SlackStatusCli
     end
   end
 
+  module Cli
+    autoload :Errors, "slack_status_cli/cli/errors"
+
+    module Queries
+      autoload :ParseGlobalFlags, "slack_status_cli/cli/queries/parse_global_flags"
+      autoload :DottedGet, "slack_status_cli/cli/queries/dotted_get"
+      autoload :CoerceScalar, "slack_status_cli/cli/queries/coerce_scalar"
+      autoload :AdminUrl, "slack_status_cli/cli/queries/admin_url"
+      autoload :DoctorHint, "slack_status_cli/cli/queries/doctor_hint"
+      autoload :RedactedToken, "slack_status_cli/cli/queries/redacted_token"
+    end
+  end
+
   module EmojiMigration
     autoload :Errors, "slack_status_cli/emoji_migration/errors"
 
