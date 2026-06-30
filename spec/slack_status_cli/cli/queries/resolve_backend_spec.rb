@@ -26,5 +26,10 @@ RSpec.describe SlackStatusCli::Cli::Queries::ResolveBackend do
       expect(described_class.call(config: config, profile: "work", env: { "SLACK_STATUS_BACKEND" => "env" }))
         .to eq(:keychain)
     end
+
+    it "strips surrounding whitespace before symbolizing" do
+      config = build_config(profiles: { "work" => { "storage_backend" => " keychain " } })
+      expect(described_class.call(config: config, profile: "work", env: {})).to eq(:keychain)
+    end
   end
 end

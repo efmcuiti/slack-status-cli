@@ -19,10 +19,10 @@ module SlackStatusCli
         end
 
         def call
-          value = profile_value || global_value || env[ENV_VAR]
-          return DEFAULT if value.nil? || value.to_s.strip.empty?
+          stripped = (profile_value || global_value || env[ENV_VAR]).to_s.strip
+          return DEFAULT if stripped.empty?
 
-          value.to_sym
+          stripped.to_sym
         end
 
         private
