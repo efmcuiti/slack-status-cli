@@ -240,6 +240,22 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
     end
   end
 
+  describe "manual-write backends" do
+    it "prints the ManualWriteRequired token line verbatim, with no leading indent" do
+      persister = Class.new do
+        def call(profile:, token:, backend_name:, settings:)
+          raise SlackStatusCli::Tokens::Errors::ManualWriteRequired,
+                "Paste the token below:\nxoxp-manual-token"
+        end
+      end.new
+
+      run(persister: persister)
+
+      expect(output.string).to include("\nxoxp-manual-token")
+      expect(output.string).not_to match(/^\s+xoxp-manual-token/)
+    end
+  end
+
   describe "missing input in non-interactive mode" do
     it "raises a clear Cli error when no client_id can be obtained" do
       prompt.ask_answer = nil

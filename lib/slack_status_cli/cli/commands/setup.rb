@@ -153,7 +153,10 @@ module SlackStatusCli
           output.puts("Wrote token to #{written[:location] || written[:source]}.")
         rescue Tokens::Errors::ManualWriteRequired => e
           output.puts("Backend `#{backend}` needs a manual step:")
-          e.message.each_line { |line| output.puts("   #{line.chomp}") }
+          # Print the message verbatim. Backends like Dashlane put the raw token
+          # on its own line for copy/paste; a leading indent would corrupt it and
+          # a user could paste an invalid (space-prefixed) token.
+          output.puts(e.message)
         end
 
         def write_profile_backend(config, backend, client_id)
