@@ -115,6 +115,15 @@ module SlackStatusCli
       autoload :ResolveBackend, "slack_status_cli/cli/queries/resolve_backend"
       autoload :ProfileHasToken, "slack_status_cli/cli/queries/profile_has_token"
     end
+
+    module Commands
+      autoload :OpenInBrowser, "slack_status_cli/cli/commands/open_in_browser"
+      autoload :PersistGlobalDefaults, "slack_status_cli/cli/commands/persist_global_defaults"
+      autoload :PersistProfileToken, "slack_status_cli/cli/commands/persist_profile_token"
+      autoload :DottedSet, "slack_status_cli/cli/commands/dotted_set"
+      autoload :InstallSignalHandlers, "slack_status_cli/cli/commands/install_signal_handlers"
+      autoload :PrintAppCreationInstructions, "slack_status_cli/cli/commands/print_app_creation_instructions"
+    end
   end
 
   module EmojiMigration
