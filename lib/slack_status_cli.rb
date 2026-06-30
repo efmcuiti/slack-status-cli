@@ -125,6 +125,7 @@ module SlackStatusCli
       autoload :PrintAppCreationInstructions, "slack_status_cli/cli/commands/print_app_creation_instructions"
       autoload :Config, "slack_status_cli/cli/commands/config"
       autoload :Profiles, "slack_status_cli/cli/commands/profiles"
+      autoload :Doctor, "slack_status_cli/cli/commands/doctor"
     end
   end
 
