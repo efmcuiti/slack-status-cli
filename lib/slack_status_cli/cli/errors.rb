@@ -16,6 +16,10 @@ module SlackStatusCli
 
         attr_reader :help_text
       end
+
+      # Raised when a `secret:` reference names a backend scheme we don't know
+      # how to resolve (anything other than env / dashlane / keychain).
+      class UnknownSecretScheme < Error; end
     end
   end
 end

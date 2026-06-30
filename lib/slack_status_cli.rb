@@ -109,6 +109,11 @@ module SlackStatusCli
       autoload :AdminUrl, "slack_status_cli/cli/queries/admin_url"
       autoload :DoctorHint, "slack_status_cli/cli/queries/doctor_hint"
       autoload :RedactedToken, "slack_status_cli/cli/queries/redacted_token"
+      autoload :ReadSecretRef, "slack_status_cli/cli/queries/read_secret_ref"
+      autoload :ResolveClientId, "slack_status_cli/cli/queries/resolve_client_id"
+      autoload :ResolveClientSecret, "slack_status_cli/cli/queries/resolve_client_secret"
+      autoload :ResolveBackend, "slack_status_cli/cli/queries/resolve_backend"
+      autoload :ProfileHasToken, "slack_status_cli/cli/queries/profile_has_token"
     end
   end
 
