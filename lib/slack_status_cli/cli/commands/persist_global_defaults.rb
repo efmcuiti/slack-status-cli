@@ -19,7 +19,7 @@ module SlackStatusCli
             raise Tokens::Errors::ConfigError, "config 'global' is not a mapping (got #{existing.class})"
           end
 
-          config["global"] = deep_merge(existing, defaults)
+          config["global"] = deep_merge(existing, stringify_keys(defaults))
           Tokens::Commands::WriteConfig.call(config: config, path: config_path)
           nil
         end
@@ -35,6 +35,17 @@ module SlackStatusCli
             else
               new_value
             end
+          end
+        end
+
+        # The loaded config is string-keyed; normalize symbol-keyed defaults so a
+        # Ruby caller's `{ oauth: {...} }` merges into the existing "oauth" subtree
+        # instead of being collapsed (and clobbering it) on YAML stringify.
+        def stringify_keys(obj)
+          case obj
+          when ::Hash then obj.each_with_object({}) { |(k, v), h| h[k.to_s] = stringify_keys(v) }
+          when ::Array then obj.map { |v| stringify_keys(v) }
+          else obj
           end
         end
       end

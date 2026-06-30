@@ -35,6 +35,20 @@ RSpec.describe SlackStatusCli::Cli::Commands::PersistGlobalDefaults do
       end
     end
 
+    it "stringifies symbol keys in defaults so they merge with existing string keys" do
+      with_tmp_config do |path:, **|
+        SlackStatusCli::Tokens::Commands::WriteConfig.call(
+          config: build_config(global: { "oauth" => { "client_id" => "cid" } }),
+          path: path,
+        )
+
+        described_class.call(defaults: { oauth: { client_secret_ref: "ref" } }, config_path: path)
+
+        loaded = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: path)
+        expect(loaded.dig("global", "oauth")).to eq("client_id" => "cid", "client_secret_ref" => "ref")
+      end
+    end
+
     it "raises ConfigError when the existing 'global' node is not a mapping" do
       with_tmp_config do |path:, **|
         File.write(path, "global: 5\n")
