@@ -20,6 +20,11 @@ module SlackStatusCli
       # Raised when a `secret:` reference names a backend scheme we don't know
       # how to resolve (anything other than env / dashlane / keychain).
       class UnknownSecretScheme < Error; end
+
+      # Raised by `config get` when the requested dotted key resolves to nil.
+      # The dispatcher maps this to a non-zero exit so scripts can branch on a
+      # missing setting, mirroring the old inline `exit 1`.
+      class ConfigKeyUnset < Error; end
     end
   end
 end
