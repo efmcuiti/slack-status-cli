@@ -209,11 +209,11 @@ gh api repos/efmcuiti/slack-status-cli/pulls/<N>/requested_reviewers \
   -X POST -f "reviewers[]=copilot-pull-request-reviewer[bot]"
 ```
 
-**Close-out gate:** before merging (Step 13), re-run recipe 3 — if any thread shows `isResolved=false`, the review loop is not done.
+**Close-out gate:** before the Step 8 merge, re-run recipe 3 — if any thread shows `isResolved=false`, the review loop is not done.
 
 ## Manual-smoke close-out gate
 
-At close-out (Step 13, before merge), a manual/unverifiable checkbox left unchecked must never be silently merged past — this is what let PR #75's live-Slack smoke box slip through. Detect it, then get an explicit Hold/Skip decision from the user.
+At close-out (Step 7a, before the Step 8 merge), a manual/unverifiable checkbox left unchecked must never be silently merged past — this is what let PR #75's live-Slack smoke box slip through. Detect it, then get an explicit Hold/Skip decision from the user.
 
 **1. Detect an unchecked manual/unverifiable box** across both the PR and issue bodies (deduped):
 
@@ -227,7 +227,7 @@ At close-out (Step 13, before merge), a manual/unverifiable checkbox left unchec
 
 Any unchecked box inside a `Recommended manual smoke steps` collapsible also counts, even if its wording misses the keywords above.
 
-**2a. Hold & run the smoke test** — do **not** merge or set Status → Done. Re-surface the derived smoke script from the PR collapsible and wait. When the user reports it passed, re-enter Step 13 from the top, tick the box `(verified manually by @efmcuiti)`, then merge.
+**2a. Hold & run the smoke test** — do **not** merge or set Status → Done. Re-surface the derived smoke script from the PR collapsible and wait. When the user reports it passed, re-run the Step 7 close-out sweep from the top, tick the box `(verified manually by @efmcuiti)`, then merge.
 
 **2b. Skip & close (waived)** — leave the box unchecked (never tick an unverified item), but annotate it inline so the conscious skip is on the record, then proceed to merge:
 
