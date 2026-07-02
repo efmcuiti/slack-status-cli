@@ -145,7 +145,7 @@ module SlackStatusCli
             scopes: SCOPES, port: PORT, timeout: TIMEOUT
           ) do |authorize_url:, redirect_uri:|
             output.puts("Opening #{authorize_url[0, 80]}… in your browser.")
-            output.puts("Listening on #{redirect_uri} (2 min timeout)…")
+            output.puts("Listening on #{redirect_uri} (#{TIMEOUT}s timeout)…")
             browser.call(url: authorize_url)
           end
         rescue Oauth::Errors::Error => e

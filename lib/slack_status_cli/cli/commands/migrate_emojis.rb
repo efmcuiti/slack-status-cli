@@ -39,8 +39,8 @@ module SlackStatusCli
         end
 
         def call
-          from = options[:from]
-          raise Errors::Error, "migrate-emojis requires --from <profile>" if from.nil? || from.to_s.empty?
+          from = options[:from].to_s.strip
+          raise Errors::Error, "migrate-emojis requires --from <profile>" if from.empty?
 
           emoji_map = fetch_emoji_map(from)
           out_dir = options[:out] || "./emoji-export-#{from}-#{clock.call.strftime("%Y%m%d-%H%M%S")}"

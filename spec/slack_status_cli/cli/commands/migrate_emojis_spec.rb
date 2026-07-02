@@ -86,6 +86,11 @@ RSpec.describe SlackStatusCli::Cli::Commands::MigrateEmojis do
         .to raise_error(SlackStatusCli::Cli::Errors::Error, /--from/)
     end
 
+    it "raises a usage Error when --from is whitespace only" do
+      expect { run(options: { from: "   " }) }
+        .to raise_error(SlackStatusCli::Cli::Errors::Error, /--from/)
+    end
+
     it "raises a clear error when the token lacks the emoji:read scope" do
       recording_emoji_list.stub("ok" => false, "error" => "missing_scope")
       expect { run(options: { from: "work" }, emoji_list: recording_emoji_list) }

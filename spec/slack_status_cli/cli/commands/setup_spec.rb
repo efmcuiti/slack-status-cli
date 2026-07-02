@@ -199,6 +199,11 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
       run
       expect(output.string).to match(/Setup complete/)
     end
+
+    it "prints the configured timeout in the listening message" do
+      run
+      expect(output.string).to include("#{described_class::TIMEOUT}s timeout")
+    end
   end
 
   describe "env injection" do
