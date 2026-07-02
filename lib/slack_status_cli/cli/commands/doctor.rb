@@ -2,11 +2,11 @@ module SlackStatusCli
   module Cli
     module Commands
       # Orchestrates the `doctor` subcommand: resolves a token for the active
-      # profile, prints its source (never the value), then calls auth.test to
-      # confirm the workspace/user it belongs to. Every failure path raises a Cli
-      # pod Error (the dispatcher maps it to a non-zero exit) instead of calling
-      # exit, and any auth.test error message is scrubbed of token shapes before
-      # it surfaces.
+      # profile, prints its source plus a redacted token (never the full value),
+      # then calls auth.test to confirm the workspace/user it belongs to. Every
+      # failure path raises a Cli pod Error (the dispatcher maps it to a non-zero
+      # exit) instead of calling exit, and any auth.test error message is scrubbed
+      # of token shapes before it surfaces.
       class Doctor
         extend Callable
 
