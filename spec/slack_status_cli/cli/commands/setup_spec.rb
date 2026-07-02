@@ -282,6 +282,19 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
       expect(output.string).to include("\nxoxp-manual-token")
       expect(output.string).not_to match(/^\s+xoxp-manual-token/)
     end
+
+    it "does not claim 'Setup complete!' when a manual storage step is still pending" do
+      persister = Class.new do
+        def call(profile:, token:, backend_name:, settings:)
+          raise SlackStatusCli::Tokens::Errors::ManualWriteRequired, "store it yourself:\nxoxp-manual-token"
+        end
+      end.new
+
+      run(persister: persister)
+
+      expect(output.string).not_to match(/Setup complete!/)
+      expect(output.string).to match(/complete the manual storage step/i)
+    end
   end
 
   describe "missing input in non-interactive mode" do

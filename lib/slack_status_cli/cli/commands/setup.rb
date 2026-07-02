@@ -71,12 +71,12 @@ module SlackStatusCli
           return if existing_token_kept?
 
           result = install(client_id, client_secret)
-          persist_token(config, backend, client_id, result[:token])
+          manual_pending = persist_token(config, backend, client_id, result[:token])
           output.puts(
             "Got #{redactor.call(token: result[:token])} " \
             "(scope=#{result[:scope]}, team=#{result[:team_name]})",
           )
-          output.puts("Setup complete! Verify with: ruby slack_status.rb doctor --profile #{profile}")
+          output.puts(completion_message(manual_pending))
           nil
         end
 
@@ -152,6 +152,8 @@ module SlackStatusCli
           raise Errors::Error, "OAuth flow failed: #{SecretScrubber.call(text: e.message)}"
         end
 
+        # Returns true when the backend could not store the token unattended and
+        # left a manual step for the user; false when the token was written.
         def persist_token(config, backend, client_id, token)
           write_profile_backend(config, backend, client_id)
           settings = merged_settings.call(config: config, profile: profile)
@@ -159,12 +161,26 @@ module SlackStatusCli
             profile: profile, token: token, backend_name: backend.to_s, settings: settings,
           )
           output.puts("Wrote token to #{written[:location] || written[:source]}.")
+          false
         rescue Tokens::Errors::ManualWriteRequired => e
           output.puts("Backend `#{backend}` needs a manual step:")
           # Print the message verbatim. Backends like Dashlane put the raw token
           # on its own line for copy/paste; a leading indent would corrupt it and
           # a user could paste an invalid (space-prefixed) token.
           output.puts(e.message)
+          true
+        end
+
+        # Manual-write backends (Env, Dashlane) haven't stored the token yet at
+        # this point, so claiming "Setup complete!" would send the user to a
+        # `doctor` run that fails. Tailor the closing line to each case.
+        def completion_message(manual_pending)
+          verify = "verify with: ruby slack_status.rb doctor --profile #{profile}"
+          if manual_pending
+            "Almost done — complete the manual storage step above, then #{verify}"
+          else
+            "Setup complete! Verify with: ruby slack_status.rb doctor --profile #{profile}"
+          end
         end
 
         def write_profile_backend(config, backend, client_id)
