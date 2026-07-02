@@ -91,8 +91,10 @@ module SlackStatusCli
           value
         end
 
+        # `to_s` first so a non-String arg (e.g. the orchestrator called directly
+        # from Ruby with a symbol/int) can't raise NoMethodError on `empty?`.
         def blank?(value)
-          value.nil? || value.empty?
+          value.to_s.strip.empty?
         end
       end
     end

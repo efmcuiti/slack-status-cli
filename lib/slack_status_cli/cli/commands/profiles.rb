@@ -54,8 +54,8 @@ module SlackStatusCli
         end
 
         def run_add
-          name = args.shift
-          raise Errors::Error, "Usage: profiles add <name>" if name.nil? || name.empty?
+          name = args.shift.to_s.strip
+          raise Errors::Error, "Usage: profiles add <name>" if name.empty?
 
           config = config_loader.call(path: config_path)
           config["profiles"] ||= {}

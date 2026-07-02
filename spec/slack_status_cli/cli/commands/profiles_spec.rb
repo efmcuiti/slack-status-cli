@@ -77,6 +77,23 @@ RSpec.describe SlackStatusCli::Cli::Commands::Profiles do
         described_class.call(args: ["add"], options: {}, output: output)
       }.to raise_error(SlackStatusCli::Cli::Errors::Error, /profiles add/)
     end
+
+    it "raises a usage Error for a whitespace-only name" do
+      expect {
+        described_class.call(args: ["add", "   "], options: {}, output: output)
+      }.to raise_error(SlackStatusCli::Cli::Errors::Error, /profiles add/)
+    end
+
+    it "strips surrounding whitespace from the profile name" do
+      with_tmp_config do |path:, **|
+        write_config(build_config, path)
+
+        described_class.call(args: ["add", "  spaced  "], options: { config_path: path }, output: output)
+
+        loaded = SlackStatusCli::Tokens::Queries::LoadConfig.call(path: path)
+        expect(loaded["profiles"].keys).to eq(["spaced"])
+      end
+    end
   end
 
   describe "unknown subcommands" do

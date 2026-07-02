@@ -83,6 +83,12 @@ RSpec.describe SlackStatusCli::Cli::Commands::Config do
         described_class.call(args: ["get"], options: {}, output: output)
       }.to raise_error(SlackStatusCli::Cli::Errors::Error, /config get/)
     end
+
+    it "raises a usage Error for a whitespace-only key" do
+      expect {
+        described_class.call(args: ["get", "   "], options: {}, output: output)
+      }.to raise_error(SlackStatusCli::Cli::Errors::Error, /config get/)
+    end
   end
 
   describe ".call(args: ['set', ...])" do
