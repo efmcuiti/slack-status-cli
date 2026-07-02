@@ -66,7 +66,7 @@ module SlackStatusCli
           return persist_global(config, client_id) if options[:global]
 
           client_secret = resolve_client_secret(config)
-          backend = backend_resolver.call(config: config, profile: profile)
+          backend = backend_resolver.call(config: config, profile: profile, env: env)
 
           return if existing_token_kept?
 
@@ -88,7 +88,7 @@ module SlackStatusCli
                     :global_persister, :redactor
 
         def resolve_client_id(config)
-          resolved = presence(client_id_resolver.call(config: config, profile: profile))
+          resolved = presence(client_id_resolver.call(config: config, profile: profile, env: env))
           return resolved if resolved
 
           # Guard non-interactive BEFORE prompting: the real CliPrompt.ask raises
@@ -101,7 +101,7 @@ module SlackStatusCli
         end
 
         def resolve_client_secret(config)
-          resolved = presence(client_secret_resolver.call(config: config, profile: profile))
+          resolved = presence(client_secret_resolver.call(config: config, profile: profile, env: env))
           return resolved if resolved
 
           raise Errors::Error, "Client Secret is required (run without --non-interactive to enter it)" if non_interactive?
@@ -115,7 +115,7 @@ module SlackStatusCli
         end
 
         def persist_global(config, client_id)
-          backend = backend_resolver.call(config: config, profile: profile)
+          backend = backend_resolver.call(config: config, profile: profile, env: env)
           global_persister.call(
             defaults: { "oauth" => { "client_id" => client_id }, "storage_backend" => backend.to_s },
             config_path: config_path,

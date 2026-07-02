@@ -66,7 +66,7 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
   def resolver_returning(value)
     Class.new do
       define_method(:value) { value }
-      def call(config:, profile:)
+      def call(config:, profile:, env: nil)
         value
       end
     end.new
@@ -75,7 +75,7 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
   def backend_returning(sym)
     Class.new do
       define_method(:sym) { sym }
-      def call(config:, profile:)
+      def call(config:, profile:, env: nil)
         sym
       end
     end.new
@@ -198,6 +198,34 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
     it "writes a completion line to output" do
       run
       expect(output.string).to match(/Setup complete/)
+    end
+  end
+
+  describe "env injection" do
+    it "forwards the injected env to the pure resolvers instead of reading global ENV" do
+      injected = { "SLACK_STATUS_CLIENT_ID" => "from-env" }
+      seen = []
+      recording = Class.new do
+        define_method(:seen) { seen }
+        def call(config:, profile:, env:)
+          seen << env
+          "cfg-cid"
+        end
+      end.new
+
+      described_class.call(
+        options: {}, output: output, env: injected, prompt: prompt,
+        config_loader: config_loader, config_writer: config_writer,
+        client_id_resolver: recording,
+        client_secret_resolver: resolver_returning("cfg-secret"),
+        backend_resolver: backend_returning(:file),
+        token_checker: checker_returning(false),
+        instructions: noop_instructions, oauth_installer: recording_oauth,
+        browser: noop_browser, token_persister: recording_persister,
+        global_persister: recording_global,
+      )
+
+      expect(seen).to eq([injected])
     end
   end
 
