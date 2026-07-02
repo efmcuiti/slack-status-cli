@@ -123,6 +123,12 @@ module SlackStatusCli
       autoload :DottedSet, "slack_status_cli/cli/commands/dotted_set"
       autoload :InstallSignalHandlers, "slack_status_cli/cli/commands/install_signal_handlers"
       autoload :PrintAppCreationInstructions, "slack_status_cli/cli/commands/print_app_creation_instructions"
+      autoload :Config, "slack_status_cli/cli/commands/config"
+      autoload :Profiles, "slack_status_cli/cli/commands/profiles"
+      autoload :Doctor, "slack_status_cli/cli/commands/doctor"
+      autoload :MigrateEmojis, "slack_status_cli/cli/commands/migrate_emojis"
+      autoload :RunStatusMode, "slack_status_cli/cli/commands/run_status_mode"
+      autoload :Setup, "slack_status_cli/cli/commands/setup"
     end
   end
 
