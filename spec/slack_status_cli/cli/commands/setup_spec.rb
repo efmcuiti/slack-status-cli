@@ -257,10 +257,29 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
   end
 
   describe "missing input in non-interactive mode" do
-    it "raises a clear Cli error when no client_id can be obtained" do
-      prompt.ask_answer = nil
-      expect { run(client_id: nil, options: { non_interactive: true }) }
+    # Mimics the real CliPrompt, which raises ArgumentError when asked to prompt
+    # in non-interactive mode. Setup must guard BEFORE calling ask, so this
+    # exploder proves it never prompts and surfaces a Cli::Errors::Error instead.
+    let(:exploding_prompt) do
+      Class.new do
+        def ask(*)
+          raise ArgumentError, "must not prompt in non-interactive mode"
+        end
+
+        def ask_yes_no(*)
+          true
+        end
+      end.new
+    end
+
+    it "raises a clear Cli error (not ArgumentError) without prompting for a missing client_id" do
+      expect { run(client_id: nil, options: { non_interactive: true }, prompt_obj: exploding_prompt) }
         .to raise_error(SlackStatusCli::Cli::Errors::Error, /[Cc]lient ID/)
+    end
+
+    it "raises a clear Cli error (not ArgumentError) without prompting for a missing client_secret" do
+      expect { run(client_secret: nil, options: { non_interactive: true }, prompt_obj: exploding_prompt) }
+        .to raise_error(SlackStatusCli::Cli::Errors::Error, /[Cc]lient [Ss]ecret/)
     end
   end
 end

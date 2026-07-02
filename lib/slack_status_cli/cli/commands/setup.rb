@@ -91,9 +91,12 @@ module SlackStatusCli
           resolved = presence(client_id_resolver.call(config: config, profile: profile))
           return resolved if resolved
 
+          # Guard non-interactive BEFORE prompting: the real CliPrompt.ask raises
+          # ArgumentError in that mode, which would escape as the wrong error type.
+          raise Errors::Error, "Client ID is required (run without --non-interactive to enter it)" if non_interactive?
+
           instructions.call(output: output)
-          value = presence(prompt.ask("Enter Client ID (from Basic Information):",
-                                       input: input, output: output, non_interactive: options[:non_interactive]))
+          value = presence(prompt.ask("Enter Client ID (from Basic Information):", input: input, output: output))
           value || raise(Errors::Error, "Client ID is required")
         end
 
@@ -101,9 +104,14 @@ module SlackStatusCli
           resolved = presence(client_secret_resolver.call(config: config, profile: profile))
           return resolved if resolved
 
-          value = presence(prompt.ask("Enter Client Secret (input hidden):",
-                                      secret: true, input: input, output: output, non_interactive: options[:non_interactive]))
+          raise Errors::Error, "Client Secret is required (run without --non-interactive to enter it)" if non_interactive?
+
+          value = presence(prompt.ask("Enter Client Secret (input hidden):", secret: true, input: input, output: output))
           value || raise(Errors::Error, "Client Secret is required")
+        end
+
+        def non_interactive?
+          options[:non_interactive]
         end
 
         def persist_global(config, client_id)
