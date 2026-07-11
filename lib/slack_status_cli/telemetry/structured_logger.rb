@@ -6,8 +6,10 @@ module SlackStatusCli
     # event to an injected IO (default $stderr, so $stdout stays clean for human
     # output). The `scrub`/`scrub_message` and `correlation_tags` seams default
     # to identity/empty here so a real secret scrubber and richer correlation
-    # can be wired in later (T9.2) without touching call sites. See the
-    # ruby-dev observability-guidelines.md for the full contract.
+    # can be wired in later (T9.2) without touching call sites. The full
+    # structured-logging contract lives in the ruby-dev skill's observability
+    # guidelines (not vendored in this repo); an in-repo telemetry doc follows
+    # in T9.5.
     class StructuredLogger
       VALID_LEVELS = %i[debug info warn error fatal].freeze
 
