@@ -10,7 +10,7 @@ The loop runs continuously, polling the currently playing track and reflecting i
 
 - The `:music:` emoji stays as the Slack status emoji in every state (continuity).
 - **Playing**: status text is a random mythological creature emoji plus the currently playing track (song, artist, album), e.g. `♪♬  :phoenix_ash: Bohemian Rhapsody - Queen (A Night at the Opera)`.
-- **Paused**: status text becomes a myth-themed intermission line, e.g. `⏸️ :fox_face: the oracle is thinking… — Bohemian Rhapsody - Queen`. The phrase rotates through a pool (`PAUSED_PHRASES` in [`../lib/slack.rb`](../lib/slack.rb)) and only the title + artist are shown so longer track names fit under Slack's 100-grapheme limit.
+- **Paused**: status text becomes a myth-themed intermission line, e.g. `⏸️ :fox_face: the oracle is thinking… — Bohemian Rhapsody - Queen`. The phrase rotates through a pool (`PAUSED_PHRASES` in [`../lib/slack_status_cli/slack/formatters/tune_text.rb`](../lib/slack_status_cli/slack/formatters/tune_text.rb)) and only the title + artist are shown so longer track names fit under Slack's 100-grapheme limit.
 - **Nothing playing**: status text falls back to `🔇 sound of silence`.
 
 Press `Ctrl+C` to stop and automatically clear your status. If a previous run leaves a stale status behind, you can wipe it with `ruby slack_status.rb clear`.
@@ -26,7 +26,7 @@ The loop picks its sleep interval based on the last observed state, so paused �
 | Silent   | 120 s | Nothing to refresh; long nap. |
 | Unknown (tick errored) | 120 s | Conservative fallback during transient failures. |
 
-Constants live at the top of [`../lib/slack.rb`](../lib/slack.rb) (`PLAYING_SLEEP`, `PAUSED_SLEEP`, `SILENT_SLEEP`) for easy tuning. Even the snappiest cadence (30 s) is well under Slack's Tier 3 budget for `users.profile.set` (~50 req/min).
+Constants live at the top of [`../lib/slack_status_cli/slack/formatters/next_interval.rb`](../lib/slack_status_cli/slack/formatters/next_interval.rb) (`PLAYING_SLEEP`, `PAUSED_SLEEP`, `SILENT_SLEEP`) for easy tuning. Even the snappiest cadence (30 s) is well under Slack's Tier 3 budget for `users.profile.set` (~50 req/min).
 
 ## How the current track is detected
 
