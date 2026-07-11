@@ -38,6 +38,17 @@ Full prerequisites (Ruby 3, `nowplaying-cli`, optional `dcli` for Dashlane) live
 - macOS (for Apple Music integration and the `security`-backed Keychain backend).
 - A Slack workspace with permission to install a personal app. See [docs/setup.md](docs/setup.md).
 
+## Project conventions
+
+Business logic lives in small, single-purpose **Callable** objects under `lib/slack_status_cli/<pod>/`, organized into pods (`slack`, `music`, `tokens`, `oauth`, `cli`, `emoji_migration`):
+
+- **`queries/`** read and return a value; **`commands/`** perform a side effect. Each exposes one public entry point — `.call` — via `extend Callable`.
+- Constructor keywords are held behind a **private `attr_reader`** and read through the readers (never a raw `@ivar` outside `initialize`), so inputs stay named, read-only, and easy to stub.
+- Each pod owns its **`Errors`** vocabulary (`Error < StandardError` + specific subclasses) and raises those rather than bare `RuntimeError`.
+- **RSpec-first:** specs mirror the `lib/` tree under `spec/` (`lib/slack_status_cli/foo/bar.rb` → `spec/slack_status_cli/foo/bar_spec.rb`). Orchestrators inject their collaborators as kwargs so specs pass fakes.
+
+See [docs/architecture.md](docs/architecture.md) for the full Callable conventions and pod layout.
+
 ## License
 
 Intended to be MIT-licensed, but no `LICENSE` file is committed to the repo yet — treat the code as "all rights reserved" until one is added.
