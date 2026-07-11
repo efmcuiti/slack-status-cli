@@ -59,8 +59,11 @@ module SlackStatusCli
         io.puts(json)
       end
 
+      # The logger is always instantiated, so the component is this instance's
+      # class. Anonymous subclasses (used in specs) have a nil name, so fall
+      # back to the superclass name to keep `caller` a stable, non-null tag.
       def component_name
-        is_a?(::Class) ? name : self.class.name
+        self.class.name || self.class.superclass.name
       end
 
       def normalize_level(level)

@@ -34,6 +34,12 @@ RSpec.describe SlackStatusCli::Telemetry::StructuredLogger do
       expect(emitted_json["caller"]).to eq("SlackStatusCli::Telemetry::StructuredLogger")
     end
 
+    it "falls back to the superclass name as caller for an anonymous subclass" do
+      Class.new(described_class).new(io: io).rich_log(message: "status set")
+
+      expect(emitted_json["caller"]).to eq("SlackStatusCli::Telemetry::StructuredLogger")
+    end
+
     it "merges log_tags (the override hook) onto every line" do
       tagged = Class.new(described_class) do
         def log_tags = { service: "slack" }
