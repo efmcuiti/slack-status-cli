@@ -6,13 +6,12 @@ Project layout, the token-resolver design, and a few "we considered X" notes so 
 
 ```
 .
-├── slack_status.rb              # CLI entry point: OptionParser + subcommand dispatch
+├── slack_status.rb              # CLI entry point: ~40-line dispatcher → Cli::Queries/Commands
 ├── Gemfile                      # Minimal: webrick (extracted from stdlib in Ruby 3.0)
 ├── lib/
 │   ├── slack_status_cli.rb      # Root namespace + autoload entry point for the Callable pods
-│   ├── slack_status_cli/        # Callable pods: slack/, music/, tokens/, oauth/ (+ callable.rb, secret_scrubber.rb)
-│   ├── cli_prompt.rb            # Interactive UX helpers ([Y/n], secret input, emoji progress, scrub_secrets)
-│   └── emoji_migrator.rb        # Emoji export helper (migrate-emojis subcommand)
+│   ├── slack_status_cli/        # Callable pods: slack/, music/, tokens/, oauth/, cli/, emoji_migration/ (+ callable.rb, secret_scrubber.rb)
+│   └── cli_prompt.rb            # Interactive UX helpers ([Y/n], secret input, emoji progress, scrub_secrets)
 ├── docs/
 │   ├── setup.md                 # Slack App + manifest, prerequisites, setup walkthrough
 │   ├── security.md              # Token storage strategies, Dashlane, threat model, rotation
@@ -121,12 +120,11 @@ WEBrick is the simplest HTTP server that ships with Ruby and was removed from st
 ## Conventions for `docs/`
 
 - Plain GitHub-rendered markdown — no MkDocs/Docusaurus build step. The repo is small enough that a static site generator would be overkill.
-- Cross-links are relative (`[setup.md](setup.md)`, `[../lib/slack.rb](../lib/slack.rb)`) so the repo browses correctly on GitHub and on a local clone.
+- Cross-links are relative (`[setup.md](setup.md)`, `[../slack_status.rb](../slack_status.rb)`) so the repo browses correctly on GitHub and on a local clone.
 - Every `docs/*.md` opens with an H1 matching the README link text and a one-sentence purpose blurb, so search results are self-describing.
 
 ## Future work
 
-- **Broaden spec coverage.** The Tokens pod callables (`ResolveToken`, the backends, `MergedSettings`) have specs; the remaining CLI dispatcher in `slack_status.rb` is covered only by manual smoke tests until the Cli pod extraction lands.
 - **Real ticket tracker.** The workspace rule mandates `em/PI-XXX_*` branch names, but `PI-XXX` is currently synthetic. Wiring Linear / GitHub Issues would let the PR template link real tickets.
 - **Windows / Linux Keychain equivalents.** `KeychainBackend` currently shells out to macOS `security`. `secret-tool` (libsecret) on Linux and `wincred` on Windows would be drop-in replacements once the tool grows past macOS.
 - **Scheduled rotation.** Today `setup --rotate` is on-demand. A cron-friendly `slack_status.rb rotate` that revokes the old token via `auth.revoke` and stores the new one would round out the lifecycle.

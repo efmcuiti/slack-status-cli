@@ -15,6 +15,10 @@ ruby slack_status.rb custom "Deep in the code" ":fire:"
 # Custom status that expires in 1 hour (3600 seconds)
 ruby slack_status.rb custom "In a meeting" ":speech_balloon:" 3600
 
+# Same, using relative-duration sugar (m = minutes, h = hours)
+ruby slack_status.rb custom "In a meeting" ":speech_balloon:" 1h
+ruby slack_status.rb custom "Commuting" ":bike:" 30m
+
 # Heads-down / focus block for 2 hours
 ruby slack_status.rb custom "Heads down — focusing" ":no_entry:" 7200
 
@@ -57,5 +61,5 @@ ruby slack_status.rb config set profiles.work.storage_backend keychain
 ruby slack_status.rb profiles list
 
 # Debug music detection without touching Slack
-ruby lib/music.rb
+ruby -Ilib -rslack_status_cli -e 'p SlackStatusCli::Music::Queries::CurrentTrack.call'
 ```
