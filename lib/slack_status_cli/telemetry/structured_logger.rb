@@ -19,10 +19,11 @@ module SlackStatusCli
       # message: a CONSTANT string; put variable data in tags so lines aggregate.
       def rich_log(message:, tags: {}, level: :info)
         normalized = normalize_level(level)
-        all_tags = scrub(default_tags.merge(tags))
-        # Reserved fields merge last so a stray tag can never clobber the
-        # normalized message/level and break log queryability.
-        payload = all_tags.merge(message: scrub_message(message), level: normalized)
+        # Stringify keys before merging the reserved fields so a tag can never
+        # clobber the normalized message/level nor emit duplicate JSON keys,
+        # regardless of whether the caller passed symbol- or string-keyed tags.
+        all_tags = scrub(default_tags.merge(tags)).transform_keys(&:to_s)
+        payload = all_tags.merge("message" => scrub_message(message), "level" => normalized)
         emit(normalized, payload.to_json)
       end
 
