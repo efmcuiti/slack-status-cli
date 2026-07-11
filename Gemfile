@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-ruby "~> 3.0"
+ruby ">= 3.1"
 
 # WEBrick was extracted from stdlib in Ruby 3.0; the OAuth flow boots a
 # one-shot listener on localhost (loopback) to capture the Slack redirect.
