@@ -20,7 +20,9 @@ module SlackStatusCli
       def rich_log(message:, tags: {}, level: :info)
         normalized = normalize_level(level)
         all_tags = scrub(default_tags.merge(tags))
-        payload = { message: scrub_message(message), level: normalized }.merge(all_tags)
+        # Reserved fields merge last so a stray tag can never clobber the
+        # normalized message/level and break log queryability.
+        payload = all_tags.merge(message: scrub_message(message), level: normalized)
         emit(normalized, payload.to_json)
       end
 

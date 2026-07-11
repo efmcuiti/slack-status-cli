@@ -60,6 +60,18 @@ RSpec.describe SlackStatusCli::Telemetry::StructuredLogger do
       expect(emitted_json["level"]).to eq("error")
     end
 
+    it "keeps the reserved message field even when a tag tries to override it" do
+      described_class.new(io: io).rich_log(message: "real", tags: { message: "spoofed" })
+
+      expect(emitted_json["message"]).to eq("real")
+    end
+
+    it "keeps the normalized level even when a tag tries to override it" do
+      described_class.new(io: io).rich_log(message: "boom", level: :error, tags: { level: "debug" })
+
+      expect(emitted_json["level"]).to eq("error")
+    end
+
     it "falls back to :info when the level is invalid" do
       described_class.new(io: io).rich_log(message: "hmm", level: :loud)
 
