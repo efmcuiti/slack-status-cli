@@ -59,9 +59,9 @@ ruby slack_status.rb [--profile NAME] [--token TOKEN] <mode> [text] [emoji] [exp
 |---|---|---|---|
 | 1 | `text` | string | Status text. Silently truncated to 100 graphemes with `…`. |
 | 2 | `emoji` | string | Slack-style code like `:fire:`. |
-| 3 | `expiration_seconds` | integer string | Added to `Time.now.to_i` to set `status_expiration`. Non-integer values are ignored (no expiration). |
+| 3 | `expiration_seconds` | duration | Relative to now: bare seconds (`3600`) or duration sugar (`30m`, `2h`) → `status_expiration = now + value`. Unrecognized/empty values are ignored (no expiration). |
 
-The integer-only validation lives in `evaluate_expiration` / `integer_string?` in [`../lib/slack.rb`](../lib/slack.rb). Pass `0` or omit to set a sticky status.
+The coercion lives in [`Slack::Builders::ExpirationSeconds`](../lib/slack_status_cli/slack/builders/expiration_seconds.rb). Pass `0` or omit to set a sticky status.
 
 ## Subcommands
 
@@ -160,6 +160,6 @@ Slack restricts custom-emoji upload to the workspace admin web UI for Standard/P
 
 ## Expiration semantics
 
-`expiration_seconds` from positional args is validated by `Slack#integer_string?` (matches `/\A[+-]?\d+\z/`) and added to `Time.now.to_i` before being sent as `status_expiration`. Anything non-integer (or empty) becomes a sticky status (expiration `0`).
+`expiration_seconds` from positional args is coerced by [`Slack::Builders::ExpirationSeconds`](../lib/slack_status_cli/slack/builders/expiration_seconds.rb) and sent as `status_expiration`. Every recognized input is treated as a duration relative to now: a bare integer (`3600`) → `now + 3600`, and duration sugar (`30m`, `2h`) → `now + offset`. Anything unrecognized (or empty) becomes a sticky status (expiration `0`).
 
 Slack itself doesn't expire `status_emoji`; the entire profile fields (`status_text`, `status_emoji`, `status_expiration`) get reset to empty/`0` at the timestamp you provide.
