@@ -61,7 +61,7 @@ ruby slack_status.rb [--profile NAME] [--token TOKEN] <mode> [text] [emoji] [exp
 | 2 | `emoji` | string | Slack-style code like `:fire:`. |
 | 3 | `expiration_seconds` | duration | Relative to now: bare seconds (`3600`) or duration sugar (`30m`, `2h`) → `status_expiration = now + value`. Unrecognized/empty values are ignored (no expiration). |
 
-The coercion lives in [`Slack::Builders::ExpirationSeconds`](../lib/slack_status_cli/slack/builders/expiration_seconds.rb). Pass `0` or omit to set a sticky status.
+The coercion lives in [`Slack::Builders::ExpirationSeconds`](../lib/slack_status_cli/slack/builders/expiration_seconds.rb). To set a **sticky** status (`status_expiration=0`, never expires), **omit** the argument or pass an unrecognized/empty value. Note a literal `0` is a valid bare-seconds input, so it resolves to `now` (immediate expiry) — not sticky.
 
 ## Subcommands
 
@@ -160,6 +160,6 @@ Slack restricts custom-emoji upload to the workspace admin web UI for Standard/P
 
 ## Expiration semantics
 
-`expiration_seconds` from positional args is coerced by [`Slack::Builders::ExpirationSeconds`](../lib/slack_status_cli/slack/builders/expiration_seconds.rb) and sent as `status_expiration`. Every recognized input is treated as a duration relative to now: a bare integer (`3600`) → `now + 3600`, and duration sugar (`30m`, `2h`) → `now + offset`. Anything unrecognized (or empty) becomes a sticky status (expiration `0`).
+`expiration_seconds` from positional args is coerced by [`Slack::Builders::ExpirationSeconds`](../lib/slack_status_cli/slack/builders/expiration_seconds.rb) and sent as `status_expiration`. Every recognized input is treated as a duration relative to now: a bare integer (`3600`) → `now + 3600`, and duration sugar (`30m`, `2h`) → `now + offset`. Anything unrecognized (or empty) becomes a sticky status (expiration `0`). Edge case: a literal `0` is a valid bare-seconds value, so it resolves to `now` (immediate expiry) — to get a sticky status, omit the argument entirely.
 
 Slack itself doesn't expire `status_emoji`; the entire profile fields (`status_text`, `status_emoji`, `status_expiration`) get reset to empty/`0` at the timestamp you provide.
