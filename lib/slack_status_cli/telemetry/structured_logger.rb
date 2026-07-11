@@ -12,6 +12,7 @@ module SlackStatusCli
     # in T9.5.
     class StructuredLogger
       VALID_LEVELS = %i[debug info warn error fatal].freeze
+      RESERVED_KEYS = %w[caller run_id level message].freeze
 
       def initialize(io: $stderr, run_id: nil)
         @io = io
@@ -21,13 +22,14 @@ module SlackStatusCli
       # message: a CONSTANT string; put variable data in tags so lines aggregate.
       def rich_log(message:, tags: {}, level: :info)
         normalized = normalize_level(level)
-        # Reserved identity/correlation fields (caller, run_id, level) are merged
-        # over the overridable log_tags/per-call tags so neither can spoof them;
-        # string-keying then dedupes symbol- vs string-keyed tags. message is
-        # applied last through its own scrub seam. Reserved fields always win.
-        reserved = { caller: component_name, level: normalized }.merge(correlation_tags)
-        all_tags = scrub(log_tags.merge(tags).merge(reserved)).transform_keys(&:to_s)
-        payload = all_tags.merge("message" => scrub_message(message))
+        # Reserved identity/correlation fields are sourced only from the logger:
+        # strip any reserved key a caller passed (so run_id can never be spoofed
+        # via tags, even when unset at init) and layer the reserved fields on
+        # top. String-keying dedupes symbol- vs string-keyed tags; message uses
+        # its own scrub seam.
+        supplied = scrub(log_tags.merge(tags)).transform_keys(&:to_s)
+                                              .reject { |key, _| RESERVED_KEYS.include?(key) }
+        payload = supplied.merge(reserved_fields(message: message, level: normalized))
         emit(normalized, payload.to_json)
       end
 
@@ -39,6 +41,13 @@ module SlackStatusCli
       private
 
       attr_reader :io, :run_id
+
+      # Identity, correlation, and message/level — sourced only from the logger,
+      # never overridable or spoofable by log_tags/per-call tags.
+      def reserved_fields(message:, level:)
+        { "caller" => component_name, "level" => level, "message" => scrub_message(message) }
+          .merge(correlation_tags.transform_keys(&:to_s))
+      end
 
       # SEAM: empty by default; carries the per-invocation run_id when present.
       def correlation_tags

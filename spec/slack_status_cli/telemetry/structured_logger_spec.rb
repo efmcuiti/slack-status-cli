@@ -92,6 +92,12 @@ RSpec.describe SlackStatusCli::Telemetry::StructuredLogger do
       expect(emitted_json["run_id"]).to eq("abc123")
     end
 
+    it "never lets a tag introduce run_id when none was set at init" do
+      described_class.new(io: io).rich_log(message: "status set", tags: { "run_id" => "spoofed" })
+
+      expect(emitted_json).not_to have_key("run_id")
+    end
+
     it "falls back to :info when the level is invalid" do
       described_class.new(io: io).rich_log(message: "hmm", level: :loud)
 
