@@ -84,6 +84,13 @@ RSpec.describe SlackStatusCli::Telemetry::StructuredLogger do
       expect(emitted_json["level"]).to eq("info")
     end
 
+    it "falls back to :info for a non-symbolizable level rather than raising" do
+      logger = described_class.new(io: io)
+
+      expect { logger.rich_log(message: "hmm", level: 5) }.not_to raise_error
+      expect(emitted_json["level"]).to eq("info")
+    end
+
     it "writes to the injected io" do
       described_class.new(io: io).rich_log(message: "status set")
 

@@ -64,7 +64,7 @@ module SlackStatusCli
       end
 
       def normalize_level(level)
-        return :info if level.nil?
+        return :info unless level.respond_to?(:to_sym)
 
         symbol = level.to_sym
         VALID_LEVELS.include?(symbol) ? symbol : :info
