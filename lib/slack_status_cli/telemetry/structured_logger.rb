@@ -19,11 +19,13 @@ module SlackStatusCli
       # message: a CONSTANT string; put variable data in tags so lines aggregate.
       def rich_log(message:, tags: {}, level: :info)
         normalized = normalize_level(level)
-        # Stringify keys before merging the reserved fields so a tag can never
-        # clobber the normalized message/level nor emit duplicate JSON keys,
-        # regardless of whether the caller passed symbol- or string-keyed tags.
-        all_tags = scrub(default_tags.merge(tags)).transform_keys(&:to_s)
-        payload = all_tags.merge("message" => scrub_message(message), "level" => normalized)
+        # Reserved identity/correlation fields (caller, run_id, level) are merged
+        # over the overridable log_tags/per-call tags so neither can spoof them;
+        # string-keying then dedupes symbol- vs string-keyed tags. message is
+        # applied last through its own scrub seam. Reserved fields always win.
+        reserved = { caller: component_name, level: normalized }.merge(correlation_tags)
+        all_tags = scrub(log_tags.merge(tags).merge(reserved)).transform_keys(&:to_s)
+        payload = all_tags.merge("message" => scrub_message(message))
         emit(normalized, payload.to_json)
       end
 
@@ -35,10 +37,6 @@ module SlackStatusCli
       private
 
       attr_reader :io, :run_id
-
-      def default_tags
-        { caller: component_name }.merge(correlation_tags).merge(log_tags)
-      end
 
       # SEAM: empty by default; carries the per-invocation run_id when present.
       def correlation_tags

@@ -80,6 +80,18 @@ RSpec.describe SlackStatusCli::Telemetry::StructuredLogger do
       expect(io.string.scan(/"level"/).length).to eq(1)
     end
 
+    it "keeps the caller identity even when a tag tries to override it" do
+      described_class.new(io: io).rich_log(message: "status set", tags: { caller: "spoofed" })
+
+      expect(emitted_json["caller"]).to eq("SlackStatusCli::Telemetry::StructuredLogger")
+    end
+
+    it "keeps the init-time run_id even when a tag tries to override it" do
+      described_class.new(io: io, run_id: "abc123").rich_log(message: "status set", tags: { "run_id" => "spoofed" })
+
+      expect(emitted_json["run_id"]).to eq("abc123")
+    end
+
     it "falls back to :info when the level is invalid" do
       described_class.new(io: io).rich_log(message: "hmm", level: :loud)
 
