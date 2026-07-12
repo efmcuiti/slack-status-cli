@@ -141,5 +141,36 @@ RSpec.describe SlackStatusCli::Telemetry::StructuredLogger do
 
       expect(emitted_json).not_to have_key("run_id")
     end
+
+    context "secret scrubbing" do
+      it "redacts a Slack token appearing in the message" do
+        described_class.new(io: io).rich_log(message: "auth failed with xoxp-abcd1234efgh")
+
+        expect(emitted_json["message"]).not_to include("xoxp-abcd1234efgh")
+        expect(emitted_json["message"]).to include("xox?-…efgh")
+      end
+
+      it "redacts a Slack token appearing in a tag value" do
+        described_class.new(io: io).rich_log(message: "boom", tags: { token: "xoxb-zzzzyyyy1111" })
+
+        expect(emitted_json["token"]).not_to include("xoxb-zzzzyyyy1111")
+        expect(emitted_json["token"]).to include("xox?-…1111")
+      end
+
+      it "leaves non-string tag values untouched (no stringifying scalars)" do
+        described_class.new(io: io).rich_log(message: "boom", tags: { attempt: 3 })
+
+        expect(emitted_json["attempt"]).to eq(3)
+      end
+
+      it "still emits a single valid JSON object after scrubbing" do
+        described_class.new(io: io).rich_log(message: "leaked xoxp-abcd1234efgh", tags: { token: "xoxb-zzzzyyyy1111" })
+
+        expect(emitted_lines.length).to eq(1)
+        expect { emitted_json }.not_to raise_error
+        expect(io.string).not_to include("xoxp-abcd1234efgh")
+        expect(io.string).not_to include("xoxb-zzzzyyyy1111")
+      end
+    end
   end
 end
