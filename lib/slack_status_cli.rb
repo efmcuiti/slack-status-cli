@@ -10,6 +10,7 @@ module SlackStatusCli
   module Telemetry
     autoload :StructuredLogger, "slack_status_cli/telemetry/structured_logger"
     autoload :NullLogger, "slack_status_cli/telemetry/null_logger"
+    autoload :RunContext, "slack_status_cli/telemetry/run_context"
   end
 
   module Slack
