@@ -4,10 +4,12 @@ module SlackStatusCli
   module Telemetry
     # Base structured, machine-readable diagnostic logger: one JSON line per
     # event to an injected IO (default $stderr, so $stdout stays clean for human
-    # output). The `scrub`/`scrub_message` seams route every message and tag
-    # value through SecretScrubber so a token can never leak; `correlation_tags`
-    # carries a per-invocation run_id (minted by RunContext at the composition
-    # root). The full structured-logging contract lives in the ruby-dev skill's
+    # output). The `scrub`/`scrub_message` seams route the message and every
+    # string tag value (including strings nested in Hash/Array values) through
+    # SecretScrubber so a token can't leak; non-string scalars keep their JSON
+    # type. `correlation_tags` carries a per-invocation run_id (minted by
+    # RunContext at the composition root). The full structured-logging contract
+    # lives in the ruby-dev skill's
     # observability guidelines (not vendored in this repo); an in-repo telemetry
     # doc follows in T9.5.
     class StructuredLogger
