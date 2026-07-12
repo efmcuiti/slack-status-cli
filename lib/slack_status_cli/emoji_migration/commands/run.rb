@@ -89,17 +89,19 @@ module SlackStatusCli
           mutex.synchronize do
             downloaded << entry
             log "  ✓ #{name}.#{entry[:extension]} (#{Queries::HumanBytes.call(bytes: entry[:bytes])})"
-            telemetry.rich_log(
-              message: "emoji downloaded",
-              tags: { name: name, extension: entry[:extension], bytes: entry[:bytes] }
-            )
           end
+          # Emit telemetry outside the lock so a sink's IO never extends the
+          # critical section and throttles download concurrency.
+          telemetry.rich_log(
+            message: "emoji downloaded",
+            tags: { name: name, extension: entry[:extension], bytes: entry[:bytes] }
+          )
         rescue StandardError => e
           mutex.synchronize do
             failures << { name: name, reason: e.message }
             log "  ✗ #{name} skipped: #{e.message}"
-            telemetry.rich_log(message: "emoji skipped", level: :warn, tags: { name: name, reason: e.message })
           end
+          telemetry.rich_log(message: "emoji skipped", level: :warn, tags: { name: name, reason: e.message })
         end
 
         def log(message)
