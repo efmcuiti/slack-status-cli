@@ -15,12 +15,13 @@ module SlackStatusCli
       class Install
         extend Callable
 
-        def initialize(client_id:, client_secret:, scopes:, port:, timeout:)
+        def initialize(client_id:, client_secret:, scopes:, port:, timeout:, telemetry: Telemetry::NullLogger.new)
           @client_id = client_id
           @client_secret = client_secret
           @scopes = scopes
           @port = port
           @timeout = timeout
+          @telemetry = telemetry
         end
 
         def call
@@ -33,22 +34,47 @@ module SlackStatusCli
             state: state
           )
 
+          # Normalize scopes to a comma-joined string (callers pass an Array or a
+          # String) so the tag schema stays stable, matching AuthorizeUrl's join.
+          telemetry.rich_log(message: "oauth install started", tags: { port: port, scopes: Array(scopes).join(",") })
+
           yield(authorize_url: authorize_url, redirect_uri: redirect_uri) if block_given?
 
           callback = WaitForCallback.call(port: port, timeout: timeout, expected_state: state)
-          result = ExchangeCode.call(
-            code: callback[:code],
-            client_id: client_id,
-            client_secret: client_secret,
-            redirect_uri: redirect_uri
+          result = exchange(callback[:code], redirect_uri)
+
+          # Identity/scope only — never the token itself.
+          telemetry.rich_log(
+            message: "oauth token exchanged",
+            tags: { user_id: result[:user_id], team_id: result[:team_id], team_name: result[:team_name] }
           )
+          telemetry.rich_log(message: "oauth scope granted", tags: { scope: result[:scope] })
 
           result.merge(authorize_url: authorize_url, redirect_uri: redirect_uri)
         end
 
         private
 
-        attr_reader :client_id, :client_secret, :scopes, :port, :timeout
+        attr_reader :client_id, :client_secret, :scopes, :port, :timeout, :telemetry
+
+        def exchange(code, redirect_uri)
+          ExchangeCode.call(
+            code: code,
+            client_id: client_id,
+            client_secret: client_secret,
+            redirect_uri: redirect_uri
+          )
+        rescue StandardError => e
+          # Rescue broadly so network/JSON failures (not just Errors::Error) stay
+          # observable, and scrub the reason so a token can't leak even through a
+          # scrub-bypassing telemetry fake.
+          telemetry.rich_log(
+            message: "oauth token exchange failed",
+            level: :error,
+            tags: { reason: SecretScrubber.call(text: e.message.to_s) }
+          )
+          raise
+        end
       end
     end
   end

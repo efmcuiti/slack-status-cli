@@ -24,13 +24,15 @@ RSpec.describe SlackStatusCli::Cli::Commands::RunStatusMode do
 
   let(:recording_updater) do
     Class.new do
-      attr_reader :calls
+      attr_reader :calls, :telemetries
       def initialize
         @calls = []
+        @telemetries = []
       end
 
-      def call(token:, mode:, text: nil, emoji: nil, expiration: nil)
+      def call(token:, mode:, text: nil, emoji: nil, expiration: nil, telemetry: nil)
         @calls << { token: token, mode: mode, text: text, emoji: emoji, expiration: expiration }
+        @telemetries << telemetry
       end
     end.new
   end
@@ -48,16 +50,17 @@ RSpec.describe SlackStatusCli::Cli::Commands::RunStatusMode do
     end.new
   end
 
-  def run(command:, args: [], resolver: resolver_returning("xoxp-mode"))
+  def run(command:, args: [], resolver: resolver_returning("xoxp-mode"), env: {}, **extra)
     described_class.call(
       command: command,
       args: args,
       options: {},
       output: output,
-      env: {},
+      env: env,
       resolver: resolver,
       signal_installer: recording_signals,
       updater: recording_updater,
+      **extra,
     )
   end
 
@@ -82,6 +85,22 @@ RSpec.describe SlackStatusCli::Cli::Commands::RunStatusMode do
     it "registers signal handlers with the resolved token" do
       run(command: "myth")
       expect(recording_signals.tokens).to eq(["xoxp-mode"])
+    end
+
+    it "threads the injected telemetry into UpdateStatus (composition-root wiring)" do
+      telemetry = CapturingTelemetry.new
+      run(command: "musical_myth", telemetry: telemetry)
+      expect(recording_updater.telemetries).to eq([telemetry])
+    end
+
+    it "defaults telemetry to a resolved logger when none is injected" do
+      run(command: "myth")
+      expect(recording_updater.telemetries.first).to respond_to(:rich_log)
+    end
+
+    it "resolves telemetry from the injected env, not global ENV" do
+      run(command: "myth", env: { "SLACK_STATUS_LOG" => "json" })
+      expect(recording_updater.telemetries.first).to be_an_instance_of(SlackStatusCli::Telemetry::StructuredLogger)
     end
 
     it "treats an unknown mode as a custom freeform status (no error)" do

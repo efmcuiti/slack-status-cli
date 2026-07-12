@@ -25,7 +25,8 @@ module SlackStatusCli
           migrator: EmojiMigration::Commands::Run,
           auth_test: Slack::Queries::AuthTest,
           admin_url_builder: Queries::AdminUrl,
-          browser: OpenInBrowser
+          browser: OpenInBrowser,
+          telemetry: Queries::ResolveTelemetry.call
         )
           @options = options || {}
           @output = output
@@ -36,6 +37,7 @@ module SlackStatusCli
           @auth_test = auth_test
           @admin_url_builder = admin_url_builder
           @browser = browser
+          @telemetry = telemetry
         end
 
         def call
@@ -44,7 +46,7 @@ module SlackStatusCli
 
           emoji_map = fetch_emoji_map(from)
           out_dir = options[:out] || "./emoji-export-#{from}-#{clock.call.strftime("%Y%m%d-%H%M%S")}"
-          result = migrator.call(emoji_map: emoji_map, out_dir: out_dir, filter: options[:filter])
+          result = migrator.call(emoji_map: emoji_map, out_dir: out_dir, filter: options[:filter], telemetry: telemetry)
 
           print_summary(result)
           handle_destination(out_dir)
@@ -54,7 +56,7 @@ module SlackStatusCli
         private
 
         attr_reader :options, :output, :clock, :resolver, :emoji_list,
-                    :migrator, :auth_test, :admin_url_builder, :browser
+                    :migrator, :auth_test, :admin_url_builder, :browser, :telemetry
 
         def fetch_emoji_map(from)
           token = resolve(from)

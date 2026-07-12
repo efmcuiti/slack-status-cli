@@ -12,13 +12,14 @@ module SlackStatusCli
       class UpdateStatus
         extend Callable
 
-        def initialize(token:, mode:, text: nil, emoji: nil, expiration: nil, output: $stdout)
+        def initialize(token:, mode:, text: nil, emoji: nil, expiration: nil, output: $stdout, telemetry: Telemetry::NullLogger.new)
           @token = token
           @mode = mode
           @text = text
           @emoji = emoji
           @expiration = expiration
           @output = output
+          @telemetry = telemetry
         end
 
         def call
@@ -26,7 +27,7 @@ module SlackStatusCli
           when :clear
             ClearStatus.call(token: token, output: output)
           when :musical_myth
-            RunMusicalLoop.call(token: token, output: output)
+            RunMusicalLoop.call(token: token, output: output, telemetry: telemetry)
           else
             set_mode_status
           end
@@ -34,7 +35,7 @@ module SlackStatusCli
 
         private
 
-        attr_reader :token, :mode, :text, :emoji, :expiration, :output
+        attr_reader :token, :mode, :text, :emoji, :expiration, :output, :telemetry
 
         def set_mode_status
           status = mode_defaults

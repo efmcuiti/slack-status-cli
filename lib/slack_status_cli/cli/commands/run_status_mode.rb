@@ -22,7 +22,8 @@ module SlackStatusCli
           env: ENV,
           resolver: Tokens::Queries::ResolveToken,
           signal_installer: InstallSignalHandlers,
-          updater: Slack::Commands::UpdateStatus
+          updater: Slack::Commands::UpdateStatus,
+          telemetry: Queries::ResolveTelemetry.call(env: env)
         )
           @command = command
           @args = args || []
@@ -32,17 +33,18 @@ module SlackStatusCli
           @resolver = resolver
           @signal_installer = signal_installer
           @updater = updater
+          @telemetry = telemetry
         end
 
         def call
           token = resolve
           signal_installer.call(token: token)
-          updater.call(token: token, mode: mode, text: text, emoji: emoji, expiration: expiration)
+          updater.call(token: token, mode: mode, text: text, emoji: emoji, expiration: expiration, telemetry: telemetry)
         end
 
         private
 
-        attr_reader :command, :args, :options, :output, :env, :resolver, :signal_installer, :updater
+        attr_reader :command, :args, :options, :output, :env, :resolver, :signal_installer, :updater, :telemetry
 
         def mode
           command&.to_sym || DEFAULT_MODE
