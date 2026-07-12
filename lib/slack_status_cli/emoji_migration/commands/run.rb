@@ -18,11 +18,12 @@ module SlackStatusCli
 
         Result = Struct.new(:downloaded, :aliases, :skipped, :total_bytes)
 
-        def initialize(emoji_map:, out_dir:, filter: nil, logger: nil, concurrency: DEFAULT_CONCURRENCY)
+        def initialize(emoji_map:, out_dir:, filter: nil, logger: nil, telemetry: Telemetry::NullLogger.new, concurrency: DEFAULT_CONCURRENCY)
           @emoji_map = emoji_map
           @out_dir = out_dir
           @filter = filter
           @logger = logger
+          @telemetry = telemetry
           @concurrency = concurrency
         end
 
@@ -35,6 +36,10 @@ module SlackStatusCli
           log "found #{real.size} image#{real.size == 1 ? "" : "s"}, " \
               "#{aliases.size} alias#{aliases.size == 1 ? "" : "es"}, " \
               "#{skipped.size} unparseable"
+          telemetry.rich_log(
+            message: "emoji export started",
+            tags: { images: real.size, aliases: aliases.size, unparseable: skipped.size }
+          )
 
           downloaded, failures = download_all(real)
           skipped.concat(failures)
@@ -43,12 +48,16 @@ module SlackStatusCli
           WriteAliases.call(out_dir: out_dir, aliases: aliases)
           WriteSkipped.call(out_dir: out_dir, skipped: skipped)
 
+          telemetry.rich_log(
+            message: "emoji export finished",
+            tags: { downloaded: downloaded.size, aliases: aliases.size, skipped: skipped.size, total_bytes: total_bytes }
+          )
           Result.new(downloaded, aliases, skipped, total_bytes)
         end
 
         private
 
-        attr_reader :emoji_map, :out_dir, :filter, :logger, :concurrency
+        attr_reader :emoji_map, :out_dir, :filter, :logger, :telemetry, :concurrency
 
         def download_all(real)
           queue = ::Queue.new
@@ -80,11 +89,16 @@ module SlackStatusCli
           mutex.synchronize do
             downloaded << entry
             log "  ✓ #{name}.#{entry[:extension]} (#{Queries::HumanBytes.call(bytes: entry[:bytes])})"
+            telemetry.rich_log(
+              message: "emoji downloaded",
+              tags: { name: name, extension: entry[:extension], bytes: entry[:bytes] }
+            )
           end
         rescue StandardError => e
           mutex.synchronize do
             failures << { name: name, reason: e.message }
             log "  ✗ #{name} skipped: #{e.message}"
+            telemetry.rich_log(message: "emoji skipped", level: :warn, tags: { name: name, reason: e.message })
           end
         end
 

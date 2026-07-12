@@ -119,5 +119,74 @@ RSpec.describe SlackStatusCli::EmojiMigration::Commands::Run do
         expect(logger.messages).to include(a_string_matching(/rocket/))
       end
     end
+
+    context "telemetry" do
+      it "emits a start event with the entry counts" do
+        with_tmp_config do |dir:, **|
+          rocket = "https://emoji.slack-edge.com/T1/rocket/abc.png"
+          emoji_map = build_emoji_map(real: { "rocket" => rocket }, aliases: { "party" => "rocket" })
+          stub_emoji(rocket, "PNGDATA")
+          telemetry = CapturingTelemetry.new
+
+          described_class.call(emoji_map: emoji_map, out_dir: dir, telemetry: telemetry, concurrency: 1)
+
+          expect(telemetry.entry_for("emoji export started").tags).to include(images: 1, aliases: 1, unparseable: 0)
+        end
+      end
+
+      it "emits a downloaded event per image with name, extension, and bytes" do
+        with_tmp_config do |dir:, **|
+          rocket = "https://emoji.slack-edge.com/T1/rocket/abc.png"
+          emoji_map = build_emoji_map(real: { "rocket" => rocket })
+          stub_emoji(rocket, "PNGDATA")
+          telemetry = CapturingTelemetry.new
+
+          described_class.call(emoji_map: emoji_map, out_dir: dir, telemetry: telemetry, concurrency: 1)
+
+          entry = telemetry.entry_for("emoji downloaded")
+          expect(entry.tags).to include(name: "rocket", extension: "png", bytes: "PNGDATA".bytesize)
+        end
+      end
+
+      it "emits a warn skipped event with name and reason on a download failure" do
+        with_tmp_config do |dir:, **|
+          boom = "https://emoji.slack-edge.com/T1/boom/x.png"
+          emoji_map = build_emoji_map(real: { "boom" => boom })
+          stub_request(:get, boom).to_return(status: 500)
+          telemetry = CapturingTelemetry.new
+
+          described_class.call(emoji_map: emoji_map, out_dir: dir, telemetry: telemetry, concurrency: 1)
+
+          entry = telemetry.entry_for("emoji skipped")
+          expect(entry.level).to eq(:warn)
+          expect(entry.tags[:name]).to eq("boom")
+          expect(entry.tags[:reason]).to be_a(String)
+        end
+      end
+
+      it "emits a finish event with the totals" do
+        with_tmp_config do |dir:, **|
+          rocket = "https://emoji.slack-edge.com/T1/rocket/abc.png"
+          emoji_map = build_emoji_map(real: { "rocket" => rocket })
+          stub_emoji(rocket, "PNGDATA")
+          telemetry = CapturingTelemetry.new
+
+          described_class.call(emoji_map: emoji_map, out_dir: dir, telemetry: telemetry, concurrency: 1)
+
+          expect(telemetry.entry_for("emoji export finished").tags)
+            .to include(downloaded: 1, total_bytes: "PNGDATA".bytesize)
+        end
+      end
+
+      it "stays silent by default (NullLogger) without a telemetry: argument" do
+        with_tmp_config do |dir:, **|
+          rocket = "https://emoji.slack-edge.com/T1/rocket/abc.png"
+          emoji_map = build_emoji_map(real: { "rocket" => rocket })
+          stub_emoji(rocket, "PNGDATA")
+
+          expect { described_class.call(emoji_map: emoji_map, out_dir: dir, concurrency: 1) }.not_to raise_error
+        end
+      end
+    end
   end
 end
