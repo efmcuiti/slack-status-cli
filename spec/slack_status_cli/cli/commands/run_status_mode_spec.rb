@@ -50,13 +50,13 @@ RSpec.describe SlackStatusCli::Cli::Commands::RunStatusMode do
     end.new
   end
 
-  def run(command:, args: [], resolver: resolver_returning("xoxp-mode"), **extra)
+  def run(command:, args: [], resolver: resolver_returning("xoxp-mode"), env: {}, **extra)
     described_class.call(
       command: command,
       args: args,
       options: {},
       output: output,
-      env: {},
+      env: env,
       resolver: resolver,
       signal_installer: recording_signals,
       updater: recording_updater,
@@ -96,6 +96,11 @@ RSpec.describe SlackStatusCli::Cli::Commands::RunStatusMode do
     it "defaults telemetry to a resolved logger when none is injected" do
       run(command: "myth")
       expect(recording_updater.telemetries.first).to respond_to(:rich_log)
+    end
+
+    it "resolves telemetry from the injected env, not global ENV" do
+      run(command: "myth", env: { "SLACK_STATUS_LOG" => "json" })
+      expect(recording_updater.telemetries.first).to be_an_instance_of(SlackStatusCli::Telemetry::StructuredLogger)
     end
 
     it "treats an unknown mode as a custom freeform status (no error)" do

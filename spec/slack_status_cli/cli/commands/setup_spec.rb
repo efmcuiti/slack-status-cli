@@ -161,11 +161,11 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
     end.new
   end
 
-  def run(options: {}, client_id: "cfg-cid", client_secret: "cfg-secret", backend: :file, has_token: false, oauth: recording_oauth, persister: recording_persister, global: recording_global, prompt_obj: prompt, **extra)
+  def run(options: {}, client_id: "cfg-cid", client_secret: "cfg-secret", backend: :file, has_token: false, oauth: recording_oauth, persister: recording_persister, global: recording_global, prompt_obj: prompt, env: {}, **extra)
     described_class.call(
       options: options,
       output: output,
-      env: {},
+      env: env,
       prompt: prompt_obj,
       config_loader: config_loader,
       config_writer: config_writer,
@@ -197,6 +197,11 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
     it "defaults telemetry to a resolved logger when none is injected" do
       run
       expect(recording_oauth.telemetries.first).to respond_to(:rich_log)
+    end
+
+    it "resolves telemetry from the injected env, not global ENV" do
+      run(env: { "SLACK_STATUS_LOG" => "json" })
+      expect(recording_oauth.telemetries.first).to be_an_instance_of(SlackStatusCli::Telemetry::StructuredLogger)
     end
 
     it "persists the returned token through the token persister" do

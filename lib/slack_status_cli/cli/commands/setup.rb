@@ -38,7 +38,7 @@ module SlackStatusCli
           token_persister: PersistProfileToken,
           global_persister: PersistGlobalDefaults,
           redactor: Queries::RedactedToken,
-          telemetry: Queries::ResolveTelemetry.call
+          telemetry: Queries::ResolveTelemetry.call(env: env)
         )
           @options = options || {}
           @output = output

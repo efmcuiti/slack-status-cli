@@ -23,7 +23,7 @@ module SlackStatusCli
           resolver: Tokens::Queries::ResolveToken,
           signal_installer: InstallSignalHandlers,
           updater: Slack::Commands::UpdateStatus,
-          telemetry: Queries::ResolveTelemetry.call
+          telemetry: Queries::ResolveTelemetry.call(env: env)
         )
           @command = command
           @args = args || []
