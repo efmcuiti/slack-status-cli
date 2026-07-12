@@ -23,13 +23,17 @@ RSpec.describe SlackStatusCli::Oauth::Commands::Install do
   end
 
   describe ".call" do
-    it "emits a start event with the port and requested scopes" do
+    it "emits a start event with the port and scopes normalized to a comma-joined string" do
       stub_flow
       telemetry = CapturingTelemetry.new
 
-      install(telemetry: telemetry)
+      described_class.call(
+        client_id: "cid", client_secret: "csecret", scopes: ["users.profile:write", "emoji:read"],
+        port: 53682, timeout: 60, telemetry: telemetry
+      )
 
-      expect(telemetry.entry_for("oauth install started").tags).to include(port: 53682, scopes: "users.profile:write")
+      expect(telemetry.entry_for("oauth install started").tags)
+        .to include(port: 53682, scopes: "users.profile:write,emoji:read")
     end
 
     it "emits a token-exchanged event with the identity but never the token" do

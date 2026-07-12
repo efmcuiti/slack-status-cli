@@ -34,7 +34,9 @@ module SlackStatusCli
             state: state
           )
 
-          telemetry.rich_log(message: "oauth install started", tags: { port: port, scopes: scopes })
+          # Normalize scopes to a comma-joined string (callers pass an Array or a
+          # String) so the tag schema stays stable, matching AuthorizeUrl's join.
+          telemetry.rich_log(message: "oauth install started", tags: { port: port, scopes: Array(scopes).join(",") })
 
           yield(authorize_url: authorize_url, redirect_uri: redirect_uri) if block_given?
 
