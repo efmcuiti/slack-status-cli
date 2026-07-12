@@ -16,8 +16,16 @@ RSpec.describe SlackStatusCli::Slack::Commands::UpdateStatus do
       described_class.call(token: token, mode: :clear, output: output)
     end
 
-    it "delegates to RunMusicalLoop when the mode is :musical_myth" do
-      expect(run_loop).to receive(:call).with(token: token, output: output)
+    it "delegates to RunMusicalLoop when the mode is :musical_myth, forwarding telemetry" do
+      telemetry = SlackStatusCli::Telemetry::NullLogger.new
+      expect(run_loop).to receive(:call).with(token: token, output: output, telemetry: telemetry)
+
+      described_class.call(token: token, mode: :musical_myth, output: output, telemetry: telemetry)
+    end
+
+    it "defaults telemetry to a NullLogger when none is injected" do
+      expect(run_loop).to receive(:call)
+        .with(token: token, output: output, telemetry: an_instance_of(SlackStatusCli::Telemetry::NullLogger))
 
       described_class.call(token: token, mode: :musical_myth, output: output)
     end
