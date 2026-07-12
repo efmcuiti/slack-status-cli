@@ -120,6 +120,7 @@ module SlackStatusCli
       autoload :ResolveClientSecret, "slack_status_cli/cli/queries/resolve_client_secret"
       autoload :ResolveBackend, "slack_status_cli/cli/queries/resolve_backend"
       autoload :ProfileHasToken, "slack_status_cli/cli/queries/profile_has_token"
+      autoload :ResolveTelemetry, "slack_status_cli/cli/queries/resolve_telemetry"
     end
 
     module Commands
