@@ -54,12 +54,20 @@ module SlackStatusCli
         run_id.nil? ? {} : { run_id: run_id }
       end
 
-      # SEAM: routes each String tag value through SecretScrubber so a Slack
-      # token can never reach a log line. Non-string scalars pass through
-      # untouched, keeping their JSON type (an integer stays a number).
+      # SEAM: routes every String reachable in a tag value through
+      # SecretScrubber so a Slack token can never reach a log line — including
+      # strings nested inside Hash/Array tag values. Non-string scalars pass
+      # through untouched, keeping their JSON type (an integer stays a number).
       def scrub(tags)
-        tags.transform_values do |value|
-          value.is_a?(::String) ? SecretScrubber.call(text: value) : value
+        tags.transform_values { |value| scrub_value(value) }
+      end
+
+      def scrub_value(value)
+        case value
+        when ::String then SecretScrubber.call(text: value)
+        when ::Hash   then value.transform_values { |nested| scrub_value(nested) }
+        when ::Array  then value.map { |nested| scrub_value(nested) }
+        else value
         end
       end
 

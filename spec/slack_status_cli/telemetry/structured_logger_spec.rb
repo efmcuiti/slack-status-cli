@@ -163,6 +163,21 @@ RSpec.describe SlackStatusCli::Telemetry::StructuredLogger do
         expect(emitted_json["attempt"]).to eq(3)
       end
 
+      it "redacts a token nested inside a hash tag value" do
+        described_class.new(io: io).rich_log(message: "boom", tags: { payload: { token: "xoxb-zzzzyyyy1111" } })
+
+        expect(io.string).not_to include("xoxb-zzzzyyyy1111")
+        expect(emitted_json.dig("payload", "token")).to include("xox?-…1111")
+      end
+
+      it "redacts a token nested inside an array tag value" do
+        described_class.new(io: io).rich_log(message: "boom", tags: { items: ["safe", "xoxp-abcd1234efgh"] })
+
+        expect(io.string).not_to include("xoxp-abcd1234efgh")
+        expect(emitted_json["items"]).to include(a_string_including("xox?-…efgh"))
+        expect(emitted_json["items"]).to include("safe")
+      end
+
       it "still emits a single valid JSON object after scrubbing" do
         described_class.new(io: io).rich_log(message: "leaked xoxp-abcd1234efgh", tags: { token: "xoxb-zzzzyyyy1111" })
 
