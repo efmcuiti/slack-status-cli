@@ -33,19 +33,21 @@ RSpec.describe SlackStatusCli::Cli::Commands::MigrateEmojis do
     end.new
   end
 
-  # Run fake: records the emoji_map it was handed, returns a canned Result.
+  # Run fake: records the emoji_map + telemetry it was handed, returns a Result.
   let(:recording_migrator) do
     Class.new do
-      attr_reader :maps, :result
+      attr_reader :maps, :telemetries, :result
       def initialize
         @maps = []
+        @telemetries = []
         @result = SlackStatusCli::EmojiMigration::Commands::Run::Result.new(
           [{ name: "rocket", bytes: 2048 }], { "party" => "rocket" }, [], 2048,
         )
       end
 
-      def call(emoji_map:, out_dir:, filter: nil)
+      def call(emoji_map:, out_dir:, filter: nil, telemetry: nil)
         @maps << emoji_map
+        @telemetries << telemetry
         @result
       end
     end.new
@@ -73,6 +75,17 @@ RSpec.describe SlackStatusCli::Cli::Commands::MigrateEmojis do
       recording_emoji_list.stub("ok" => true, "emoji" => { "rocket" => "https://e/rocket.png", "tada" => "https://e/tada.gif" })
       run(options: { from: "work", out: "/tmp/out" }, emoji_list: recording_emoji_list)
       expect(recording_migrator.maps.first).to eq("rocket" => "https://e/rocket.png", "tada" => "https://e/tada.gif")
+    end
+
+    it "threads the injected telemetry into Run (composition-root wiring)" do
+      telemetry = CapturingTelemetry.new
+      run(options: { from: "work", out: "/tmp/out" }, telemetry: telemetry)
+      expect(recording_migrator.telemetries).to eq([telemetry])
+    end
+
+    it "defaults telemetry to a resolved logger when none is injected" do
+      run(options: { from: "work", out: "/tmp/out" })
+      expect(recording_migrator.telemetries.first).to respond_to(:rich_log)
     end
 
     it "prints the result struct summary" do
