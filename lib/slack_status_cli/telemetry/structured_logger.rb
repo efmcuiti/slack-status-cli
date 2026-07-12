@@ -4,12 +4,14 @@ module SlackStatusCli
   module Telemetry
     # Base structured, machine-readable diagnostic logger: one JSON line per
     # event to an injected IO (default $stderr, so $stdout stays clean for human
-    # output). The `scrub`/`scrub_message` and `correlation_tags` seams default
-    # to identity/empty here so a real secret scrubber and richer correlation
-    # can be wired in later (T9.2) without touching call sites. The full
-    # structured-logging contract lives in the ruby-dev skill's observability
-    # guidelines (not vendored in this repo); an in-repo telemetry doc follows
-    # in T9.5.
+    # output). The `scrub`/`scrub_message` seams route the message and every
+    # string tag value (including strings nested in Hash/Array values) through
+    # SecretScrubber so a token can't leak; non-string scalars keep their JSON
+    # type. `correlation_tags` carries a per-invocation run_id (minted by
+    # RunContext at the composition root). The full structured-logging contract
+    # lives in the ruby-dev skill's
+    # observability guidelines (not vendored in this repo); an in-repo telemetry
+    # doc follows in T9.5.
     class StructuredLogger
       VALID_LEVELS = %i[debug info warn error fatal].freeze
       RESERVED_KEYS = %w[caller run_id level message].freeze
@@ -54,13 +56,26 @@ module SlackStatusCli
         run_id.nil? ? {} : { run_id: run_id }
       end
 
-      # SEAM: identity by default; T9.2 wires SlackStatusCli::SecretScrubber here.
+      # SEAM: routes every String *value* reachable in a tag — including those
+      # nested inside Hash/Array values — through SecretScrubber so a Slack
+      # token can't reach a log line. Hash keys are field names, not secrets,
+      # so they're left as-is. Non-string scalars pass through untouched,
+      # keeping their JSON type (an integer stays a number).
       def scrub(tags)
-        tags
+        tags.transform_values { |value| scrub_value(value) }
+      end
+
+      def scrub_value(value)
+        case value
+        when ::String then SecretScrubber.call(text: value)
+        when ::Hash   then value.transform_values { |nested| scrub_value(nested) }
+        when ::Array  then value.map { |nested| scrub_value(nested) }
+        else value
+        end
       end
 
       def scrub_message(message)
-        message
+        SecretScrubber.call(text: message)
       end
 
       # SEAM: where the JSON line goes. An IO sink writes one line and ignores
