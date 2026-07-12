@@ -64,8 +64,15 @@ module SlackStatusCli
             client_secret: client_secret,
             redirect_uri: redirect_uri
           )
-        rescue Errors::Error => e
-          telemetry.rich_log(message: "oauth token exchange failed", level: :error, tags: { reason: e.message })
+        rescue StandardError => e
+          # Rescue broadly so network/JSON failures (not just Errors::Error) stay
+          # observable, and scrub the reason so a token can't leak even through a
+          # scrub-bypassing telemetry fake.
+          telemetry.rich_log(
+            message: "oauth token exchange failed",
+            level: :error,
+            tags: { reason: SecretScrubber.call(text: e.message.to_s) }
+          )
           raise
         end
       end

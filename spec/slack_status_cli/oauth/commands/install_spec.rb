@@ -76,6 +76,18 @@ RSpec.describe SlackStatusCli::Oauth::Commands::Install do
       expect(entry.tags[:reason]).to include("bad_code")
     end
 
+    it "also logs and re-raises a non-Errors::Error failure (e.g. a network error), scrubbing the reason" do
+      stub_flow(raise_exchange: StandardError.new("connection reset leaked xoxp-abcd1234efgh"))
+      telemetry = CapturingTelemetry.new
+
+      expect { install(telemetry: telemetry) }.to raise_error(StandardError, /connection reset/)
+
+      entry = telemetry.entry_for("oauth token exchange failed")
+      expect(entry.level).to eq(:error)
+      expect(entry.tags[:reason]).to include("connection reset")
+      expect(entry.tags[:reason]).not_to include("xoxp-abcd1234efgh")
+    end
+
     it "works with the NullLogger default (no telemetry: argument)" do
       stub_flow
 
