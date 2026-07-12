@@ -1,6 +1,6 @@
 # Project workflow
 
-This document describes how the [Slack CLI Pi-Pod Refactor](https://github.com/users/efmcuiti/projects/2/views/1) GitHub Project is managed.
+This document describes how the [slack-status-cli](https://github.com/users/efmcuiti/projects/2/views/1) GitHub Project is managed. The project began life as the Pi-Pod Refactor; post-v1 it runs the maintenance workflow described at the end of this file.
 
 ## Labels are the single source of truth
 
@@ -237,4 +237,65 @@ gh pr view <PR> --json body --jq .body > /tmp/body.md
 # edit /tmp/body.md: append " (waived by @efmcuiti at close — not run)" to the matched "- [ ]" line
 gh pr edit <PR> --body-file /tmp/body.md
 # repeat with `gh issue view/edit <N>` when the same box lives on the issue
+```
+
+## Maintenance workflow (post-v1)
+
+Once v1.0 ships, this project runs the **maintenance mode** defined generically in the `rails-sdlc` skill's `MAINTENANCE.md` (the model, taxonomy, triage table, and command procedures live there). This section records only the slack-status-cli specifics.
+
+### Window model
+
+A **milestone is the time-boxed window** — issues are scheduled into it and it closes at each release:
+
+- Milestone naming is **version-based**: `v1.1`, `v1.2`, ... (a window = "what goes into the next release").
+- **No milestone = the triage inbox** — a freshly filed ask sits milestone-less until triaged; assigning a milestone *is* the act of scheduling it.
+- `type:epic` is reserved for large features that earn a `/rails-sdlc` breakdown; everything else is a standalone typed issue (below). Milestone and epic are orthogonal — a feature epic's tasks all carry the same milestone.
+
+### Taxonomy additions
+
+On top of the refactor taxonomy, maintenance adds three directly-executable issue types:
+
+| Label | Meaning |
+|---|---|
+| `type:bug` | Defect against shipped behavior (reproduce-first under `/ruby-dev`) |
+| `type:enhancement` | Small improvement / feature ask |
+| `type:chore` | Deps, CI, docs, no-behavior-change refactor |
+
+`phase:*` labels are **retired for standalone maintenance issues** (the milestone is the grouping now); they reappear only inside an escalated `/rails-sdlc` feature epic.
+
+### Triage routing
+
+Every intake is classified once:
+
+- **Directly executable** (one PR, clear approach, no open questions) → `/ruby-dev` (most bugs, chores, small enhancements).
+- **Needs design** (open questions, >1 substantial class, an "and" in the title, `size:l` not dominated by one hard problem, architectural impact) → `/rails-sdlc` scoped to that single feature (Discovery → Design → Planning), whose tasks flow back to `/ruby-dev`.
+
+### Commands
+
+Day-to-day maintenance is driven by the `rails-sdlc` verbs:
+
+- `/rails-sdlc maintenance setup` — idempotent: ensure the labels above, open the next `vX.Y` milestone, keep this section current.
+- `/rails-sdlc maintenance create <bug|enhancement|chore> <context>` — plan mode + `/grill-me` to clarify and triage, then file + route on approval.
+- `/rails-sdlc maintenance close-window` — at each release: roll open survivors forward to the next milestone, then close the current one.
+
+### Saved views (manual Projects-v2 UI step)
+
+The project board is not scripted for these; add them once via the Projects UI:
+
+- **Inbox** — filter `no:milestone` (untriaged asks awaiting a window).
+- **Current window** — filter `milestone:"v1.1"` (swap per active window).
+
+### Close-out / roll-over recipe
+
+```bash
+CUR=v1.1; NEXT=v1.2
+# 1. ensure NEXT exists
+gh api "repos/efmcuiti/slack-status-cli/milestones" --jq '.[].title' | grep -qx "$NEXT" \
+  || gh api "repos/efmcuiti/slack-status-cli/milestones" -f title="$NEXT" -f description="Maintenance window $NEXT"
+# 2. roll open survivors forward
+gh issue list --repo efmcuiti/slack-status-cli --milestone "$CUR" --state open --json number --jq '.[].number' \
+  | xargs -I{} gh issue edit {} --repo efmcuiti/slack-status-cli --milestone "$NEXT"
+# 3. close the current milestone
+NUM=$(gh api "repos/efmcuiti/slack-status-cli/milestones" --jq ".[] | select(.title==\"$CUR\") | .number")
+gh api -X PATCH "repos/efmcuiti/slack-status-cli/milestones/$NUM" -f state=closed
 ```
