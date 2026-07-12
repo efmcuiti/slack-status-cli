@@ -37,7 +37,8 @@ module SlackStatusCli
           browser: OpenInBrowser,
           token_persister: PersistProfileToken,
           global_persister: PersistGlobalDefaults,
-          redactor: Queries::RedactedToken
+          redactor: Queries::RedactedToken,
+          telemetry: Queries::ResolveTelemetry.call
         )
           @options = options || {}
           @output = output
@@ -57,6 +58,7 @@ module SlackStatusCli
           @token_persister = token_persister
           @global_persister = global_persister
           @redactor = redactor
+          @telemetry = telemetry
         end
 
         def call
@@ -85,7 +87,7 @@ module SlackStatusCli
         attr_reader :options, :output, :input, :env, :prompt, :config_loader, :config_writer,
                     :merged_settings, :client_id_resolver, :client_secret_resolver, :backend_resolver,
                     :token_checker, :instructions, :oauth_installer, :browser, :token_persister,
-                    :global_persister, :redactor
+                    :global_persister, :redactor, :telemetry
 
         def resolve_client_id(config)
           resolved = presence(client_id_resolver.call(config: config, profile: profile, env: env))
@@ -142,7 +144,7 @@ module SlackStatusCli
         def install(client_id, client_secret)
           oauth_installer.call(
             client_id: client_id, client_secret: client_secret,
-            scopes: SCOPES, port: PORT, timeout: TIMEOUT
+            scopes: SCOPES, port: PORT, timeout: TIMEOUT, telemetry: telemetry
           ) do |authorize_url:, redirect_uri:|
             output.puts("Opening #{authorize_url[0, 80]}… in your browser.")
             output.puts("Listening on #{redirect_uri} (#{TIMEOUT}s timeout)…")

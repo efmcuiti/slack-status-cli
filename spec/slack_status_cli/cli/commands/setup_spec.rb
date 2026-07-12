@@ -92,13 +92,15 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
 
   let(:recording_oauth) do
     Class.new do
-      attr_reader :calls
+      attr_reader :calls, :telemetries
       def initialize
         @calls = []
+        @telemetries = []
       end
 
-      def call(client_id:, client_secret:, scopes:, port:, timeout:)
+      def call(client_id:, client_secret:, scopes:, port:, timeout:, telemetry: nil)
         @calls << { client_id: client_id, client_secret: client_secret }
+        @telemetries << telemetry
         yield(authorize_url: "https://slack.com/oauth/v2/authorize?x", redirect_uri: "http://localhost:53682/callback") if block_given?
         { token: "xoxp-new-token", scope: "users.profile:write", team_name: "Phoenix HQ" }
       end
@@ -159,7 +161,7 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
     end.new
   end
 
-  def run(options: {}, client_id: "cfg-cid", client_secret: "cfg-secret", backend: :file, has_token: false, oauth: recording_oauth, persister: recording_persister, global: recording_global, prompt_obj: prompt)
+  def run(options: {}, client_id: "cfg-cid", client_secret: "cfg-secret", backend: :file, has_token: false, oauth: recording_oauth, persister: recording_persister, global: recording_global, prompt_obj: prompt, **extra)
     described_class.call(
       options: options,
       output: output,
@@ -176,6 +178,7 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
       browser: noop_browser,
       token_persister: persister,
       global_persister: global,
+      **extra,
     )
   end
 
@@ -183,6 +186,17 @@ RSpec.describe SlackStatusCli::Cli::Commands::Setup do
     it "calls the oauth installer with the resolved client_id and secret" do
       run
       expect(recording_oauth.calls.first).to eq(client_id: "cfg-cid", client_secret: "cfg-secret")
+    end
+
+    it "threads the injected telemetry into the oauth installer (composition-root wiring)" do
+      telemetry = CapturingTelemetry.new
+      run(telemetry: telemetry)
+      expect(recording_oauth.telemetries).to eq([telemetry])
+    end
+
+    it "defaults telemetry to a resolved logger when none is injected" do
+      run
+      expect(recording_oauth.telemetries.first).to respond_to(:rich_log)
     end
 
     it "persists the returned token through the token persister" do
