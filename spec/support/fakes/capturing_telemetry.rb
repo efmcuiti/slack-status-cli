@@ -17,7 +17,9 @@ class CapturingTelemetry
   end
 
   def rich_log(message:, tags: {}, level: :info)
-    @entries << Entry.new(message: message, tags: tags, level: level)
+    # Snapshot tags so a caller reusing/mutating the Hash afterwards can't alter
+    # a recorded entry — mirrors a real logger that serializes immediately.
+    @entries << Entry.new(message: message, tags: tags.dup, level: level)
     nil
   end
 

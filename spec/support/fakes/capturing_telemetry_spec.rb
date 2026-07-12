@@ -21,6 +21,16 @@ RSpec.describe CapturingTelemetry do
     expect(entry.tags).to eq({})
   end
 
+  it "snapshots tags so later mutation of the caller's Hash can't alter a recorded entry" do
+    telemetry = described_class.new
+    tags = { name: "rocket" }
+
+    telemetry.rich_log(message: "did a thing", tags: tags)
+    tags[:name] = "mutated"
+
+    expect(telemetry.entry_for("did a thing").tags).to eq(name: "rocket")
+  end
+
   it "exposes the ordered list of messages and returns nil like NullLogger" do
     telemetry = described_class.new
 
