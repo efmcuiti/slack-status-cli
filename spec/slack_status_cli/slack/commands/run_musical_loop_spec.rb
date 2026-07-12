@@ -93,6 +93,18 @@ RSpec.describe SlackStatusCli::Slack::Commands::RunMusicalLoop do
         expect(changed.size).to eq(1)
       end
 
+      it "does not re-announce the same track after an intervening errored tick" do
+        sequence = [-> { build_tune(name: "Aurora") }, -> { raise "network blip" }, -> { build_tune(name: "Aurora") }]
+        tick = ->(token:, output:) { sequence.shift.call }
+        telemetry = CapturingTelemetry.new
+        sleeper = FakeSleeper.new(raise_after: 3)
+
+        described_class.call(token: token, sleeper: sleeper, tick: tick, output: output, telemetry: telemetry)
+
+        changed = telemetry.entries.select { |entry| entry.message == "musical track changed" }
+        expect(changed.size).to eq(1)
+      end
+
       it "logs a warn tick-failed event with the error class and reason" do
         tick = ->(token:, output:) { raise "boom detonation" }
         telemetry = CapturingTelemetry.new

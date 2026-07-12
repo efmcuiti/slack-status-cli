@@ -28,10 +28,12 @@ module SlackStatusCli
 
             telemetry.rich_log(message: "musical loop tick", level: :debug, tags: { state: label, interval: interval })
             track = track_key(tune)
+            # Only advance last_track on a real, non-nil change: a silent/errored
+            # tick (nil track) must preserve it so the same song isn't re-announced.
             if track && track != last_track
               telemetry.rich_log(message: "musical track changed", tags: { name: tune[:name], artist: tune[:artist] })
+              last_track = track
             end
-            last_track = track
 
             sleeper.call(interval)
           end
