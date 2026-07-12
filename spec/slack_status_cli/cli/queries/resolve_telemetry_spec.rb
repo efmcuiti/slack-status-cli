@@ -17,9 +17,19 @@ RSpec.describe SlackStatusCli::Cli::Queries::ResolveTelemetry do
         expect(described_class.call(env: { "SLACK_STATUS_LOG" => "  OFF  " }))
           .to be_an_instance_of(SlackStatusCli::Telemetry::NullLogger)
       end
+
+      it "stays off for an unrecognized value (e.g. a typo like 'josn')" do
+        expect(described_class.call(env: { "SLACK_STATUS_LOG" => "josn" }))
+          .to be_an_instance_of(SlackStatusCli::Telemetry::NullLogger)
+      end
     end
 
     context "when SLACK_STATUS_LOG enables logging" do
+      it "returns a StructuredLogger for a bare log level like 'warn'" do
+        expect(described_class.call(env: { "SLACK_STATUS_LOG" => "warn" }))
+          .to be_an_instance_of(SlackStatusCli::Telemetry::StructuredLogger)
+      end
+
       it "returns a StructuredLogger writing to $stderr with a run_id set" do
         captured = capture_stdio do
           logger = described_class.call(env: { "SLACK_STATUS_LOG" => "json" })
