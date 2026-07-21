@@ -8,10 +8,9 @@ module SlackStatusCli
     # string tag value (including strings nested in Hash/Array values) through
     # SecretScrubber so a token can't leak; non-string scalars keep their JSON
     # type. `correlation_tags` carries a per-invocation run_id (minted by
-    # RunContext at the composition root). The full structured-logging contract
-    # lives in the ruby-dev skill's
-    # observability guidelines (not vendored in this repo); an in-repo telemetry
-    # doc follows in T9.5.
+    # RunContext at the composition root). The usage-facing contract lives in
+    # docs/observability.md; the portable, environment-agnostic version is the
+    # ruby-dev skill's observability guidelines (not vendored in this repo).
     class StructuredLogger
       VALID_LEVELS = %i[debug info warn error fatal].freeze
       RESERVED_KEYS = %w[caller run_id level message].freeze
