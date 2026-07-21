@@ -47,7 +47,7 @@ telemetry.rich_log(message:, tags: {}, level: :info)
 - **`tags`** is a hash of structured fields. Non-string scalars keep their JSON type (an integer stays a number).
 - **`level`** is one of `:debug :info :warn :error :fatal` (`VALID_LEVELS`). An invalid or non-symbolizable level falls back to `:info`. The IO sink writes every level (the level is a field, not a filter); a level-routing sink like `Rails.logger` would honor it.
 
-Every emitted line also carries three **reserved fields** the logger owns and a caller can never override or spoof via tags:
+Every emitted line also carries the logger-owned **reserved fields** (`RESERVED_KEYS`) that a caller can never override or spoof via tags — `caller`, `level`, and `message` on every line, plus `run_id` when one was set at construction:
 
 - `caller` — the component class name (e.g. `SlackStatusCli::EmojiMigration::Commands::Run`).
 - `level` — the normalized level.
