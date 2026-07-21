@@ -10,7 +10,7 @@ Project layout, the token-resolver design, and a few "we considered X" notes so 
 ├── Gemfile                      # Minimal: webrick (extracted from stdlib in Ruby 3.0)
 ├── lib/
 │   ├── slack_status_cli.rb      # Root namespace + autoload entry point for the Callable pods
-│   ├── slack_status_cli/        # Callable pods: slack/, music/, tokens/, oauth/, cli/, emoji_migration/ (+ callable.rb, secret_scrubber.rb)
+│   ├── slack_status_cli/        # Callable pods: slack/, music/, tokens/, oauth/, cli/, emoji_migration/, telemetry/ (+ callable.rb, secret_scrubber.rb)
 │   └── cli_prompt.rb            # Interactive UX helpers ([Y/n], secret input, emoji progress, scrub_secrets)
 ├── docs/
 │   ├── setup.md                 # Slack App + manifest, prerequisites, setup walkthrough
@@ -18,9 +18,12 @@ Project layout, the token-resolver design, and a few "we considered X" notes so 
 │   ├── usage.md                 # Full CLI reference: flags, modes, subcommands
 │   ├── musical-myth.md          # Now-playing detection deep-dive
 │   ├── examples.md              # Copy-pasteable invocations
+│   ├── observability.md         # Diagnostic telemetry: SLACK_STATUS_LOG, rich_log contract, seams
 │   ├── troubleshooting.md       # Notes, gotchas, Slack error decoder
 │   ├── architecture.md          # This file
+│   ├── adr/                     # Architecture Decision Records (0001-…)
 │   └── slack-app-manifest.yml   # Slack App manifest (paste at app creation time)
+├── CONTEXT.md                   # Domain glossary (telemetry vocabulary; grows per pod)
 └── README.md
 ```
 
@@ -53,6 +56,22 @@ end
 - **`::`-qualify top-level stdlib constants** inside a namespaced pod (`::File`, `::FileUtils`, `::Net::HTTP`) so a future same-named constant in the namespace can never shadow the standard library by accident.
 - **Freeze string constants** (`FILENAME = "skipped.json".freeze`, `UNSAFE = /.../.freeze`) so shared literals can't be mutated in place.
 - **Never log secret values.** Print the *source* of a resolved token, not the value (`resolved from dashlane:dl://...`), and route any caught exception through `CliPrompt.scrub_secrets`, which replaces `xox[a-z]-…` patterns with `xox?-…XXXX`. A real token in any log line is a bug.
+
+## Telemetry / observability
+
+Diagnostic logging lives in its own `Telemetry` pod, kept strictly separate from the human-progress channel (`CliPrompt` on `$stdout`). The diagnostic channel emits one JSON line per event to `$stderr` and is **off by default**.
+
+```
+lib/slack_status_cli/telemetry/
+  structured_logger.rb   # base logger: rich_log + log_tags + scrub/correlation_tags/emit seams
+  null_logger.rb         # no-op subclass — the off switch and default telemetry: value
+  run_context.rb         # RunContext.generate — per-invocation run_id (SecureRandom.hex)
+lib/slack_status_cli/cli/queries/resolve_telemetry.rb   # composition-root switch (reads SLACK_STATUS_LOG)
+```
+
+The integration follows the **injected-collaborator** convention: pure queries/commands stay logger-free, while orchestrators take a `telemetry:` keyword defaulting to `Telemetry::NullLogger.new`. The composition root — each `Cli::Commands::*` entrypoint — calls `Cli::Queries::ResolveTelemetry.call(env:)` and threads the resolved logger down (`Run`, `Install`, and `UpdateStatus → RunMusicalLoop`). A logger is resolved once per invocation, so every line shares one `run_id`.
+
+Two invariants are enforced structurally rather than by convention: the `scrub` seam routes every message and string tag value through `SecretScrubber` (never log a secret), and the reserved fields `caller`/`level`/`message`/`run_id` are owned by the logger and can't be overridden by caller tags. See [observability.md](observability.md) for the usage-facing contract and [adr/0001-injected-diagnostic-logger.md](adr/0001-injected-diagnostic-logger.md) for why injected-over-mixin/global.
 
 ## Token resolver
 
