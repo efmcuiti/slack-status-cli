@@ -31,9 +31,9 @@ module SlackStatusCli
         attr_reader :token, :text, :emoji, :expiration, :output, :now
 
         def pre_send_line
-          return "📤 Clearing Slack status (empty)" if text.to_s.strip.empty?
+          return "📤 Clearing Slack status (empty)" if text.to_s.empty?
 
-          label = emoji.to_s.strip.empty? ? text : "#{emoji} #{text}"
+          label = emoji.to_s.empty? ? text : "#{emoji} #{text}"
           "📤 Setting Slack status: #{label}"
         end
 

@@ -81,6 +81,32 @@ RSpec.describe SlackStatusCli::Slack::Commands::SetStatus do
         expect(output.string).not_to include("📤 Setting Slack status")
       end
 
+      it "clears only on a truly empty string; whitespace text stays 'Setting' to mirror the payload" do
+        stub_request(:post, "https://slack.com/api/users.profile.set")
+          .to_return(status: 200, body: '{"ok":true}')
+
+        described_class.call(token: token, text: "   ", emoji: "", expiration: nil, output: output)
+
+        expect(output.string).to include("📤 Setting Slack status:")
+        expect(output.string).not_to include("📤 Clearing Slack status")
+      end
+
+      it "emits the pre-send line before the HTTP POST is issued" do
+        sequence = []
+        allow(output).to receive(:puts).and_wrap_original do |orig, *args|
+          sequence << :puts if args.first.to_s.start_with?("📤")
+          orig.call(*args)
+        end
+        stub_request(:post, "https://slack.com/api/users.profile.set").to_return do |_request|
+          sequence << :post
+          { status: 200, body: '{"ok":true}' }
+        end
+
+        described_class.call(token: token, text: "heads down", emoji: ":wolf:", expiration: nil, output: output)
+
+        expect(sequence).to eq(%i[puts post])
+      end
+
       it "prints the pre-send line even when the POST fails (intent, not outcome)" do
         allow(SlackStatusCli::Slack::Http::PostRequest).to receive(:call).and_raise(StandardError, "boom")
 
