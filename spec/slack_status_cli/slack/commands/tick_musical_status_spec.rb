@@ -39,5 +39,25 @@ RSpec.describe SlackStatusCli::Slack::Commands::TickMusicalStatus do
 
       expect(result[:state]).to eq(:silent)
     end
+
+    describe "pre-send status log line (inherited from SetStatus)" do
+      it "prints the now-playing pre-send line through a real SetStatus tick" do
+        stub_request(:post, "https://slack.com/api/users.profile.set")
+          .to_return(status: 200, body: '{"ok":true}')
+
+        described_class.call(token: token, current_track: -> { raw_tune }, output: output)
+
+        expect(output.string).to include("📤 Setting Slack status: :music:")
+        expect(output.string).to include("Sirens")
+      end
+
+      it "stays silent (no pre-send line) when nothing is playing" do
+        silent = raw_tune(name: nil, artist: nil, album: nil, playing: false)
+
+        described_class.call(token: token, current_track: -> { silent }, output: output)
+
+        expect(output.string).not_to include("📤")
+      end
+    end
   end
 end

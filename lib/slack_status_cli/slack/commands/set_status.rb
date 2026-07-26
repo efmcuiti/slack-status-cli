@@ -20,6 +20,7 @@ module SlackStatusCli
         end
 
         def call
+          output.puts(pre_send_line)
           response = Http::PostRequest.call(token: token, path: PATH, body: payload)
           Formatters::ResponseLogger.call(response: response, output: output)
           response
@@ -28,6 +29,13 @@ module SlackStatusCli
         private
 
         attr_reader :token, :text, :emoji, :expiration, :output, :now
+
+        def pre_send_line
+          return "📤 Clearing Slack status (empty)" if text.to_s.strip.empty?
+
+          label = emoji.to_s.strip.empty? ? text : "#{emoji} #{text}"
+          "📤 Setting Slack status: #{label}"
+        end
 
         def payload
           Builders::StatusPayload.call(text: text, emoji: emoji, expiration: expiration, now: now)
