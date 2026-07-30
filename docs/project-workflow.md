@@ -86,7 +86,7 @@ When an agent picks up a task issue (the `/ruby-dev` skill drives this), the lif
 
 7. Final checkbox sweep on the issue and PR.
 
-   7a. **Manual-smoke gate:** scan PR + issue for an unchecked manual/unverifiable box; if present, get an explicit Hold/Skip decision before merging (see "Manual-smoke close-out gate" below).
+   7a. **Manual-smoke gate:** scan PR + issue for an unchecked manual/unverifiable box; if present, first check whether the results are already posted in the PR, then get an explicit decision before merging (see "Manual-smoke close-out gate" below).
 8. Squash-merge + delete branch: `gh pr merge N --repo efmcuiti/slack-status-cli --squash --delete-branch`.
 9. Set the task Status to Done (option `98236657`).
 10. Sync local main: `git checkout main && git pull --ff-only`.
@@ -213,7 +213,7 @@ gh api repos/efmcuiti/slack-status-cli/pulls/<N>/requested_reviewers \
 
 ## Manual-smoke close-out gate
 
-At close-out (Step 7a, before the Step 8 merge), a manual/unverifiable checkbox left unchecked must never be silently merged past — this is what let PR #75's live-Slack smoke box slip through. Detect it, then get an explicit Hold/Skip decision from the user.
+At close-out (Step 7a, before the Step 8 merge), a manual/unverifiable checkbox left unchecked must never be silently merged past — this is what let PR #75's live-Slack smoke box slip through. Detect it, **check whether the results are already posted**, then get an explicit decision from the user.
 
 **1. Detect an unchecked manual/unverifiable box** across both the PR and issue bodies (deduped):
 
@@ -227,15 +227,36 @@ At close-out (Step 7a, before the Step 8 merge), a manual/unverifiable checkbox 
 
 Any unchecked box inside a `Recommended manual smoke steps` collapsible also counts, even if its wording misses the keywords above.
 
-**2a. Hold & run the smoke test** — do **not** merge or set Status → Done. Re-surface the derived smoke script from the PR collapsible and wait. When the user reports it passed, re-run the Step 7 close-out sweep from the top, tick the box `(verified manually by @efmcuiti)`, then merge.
+**2. Check for already-posted results — before prompting.** The user may have run the smoke test and recorded it in the PR (a `### Manual smoke results` section). The grep in step 1 only returns the box line, so it cannot see that; fetch the **whole** body fresh — plus comments, since results are sometimes posted there — and read it:
 
-**2b. Skip & close (waived)** — leave the box unchecked (never tick an unverified item), but annotate it inline so the conscious skip is on the record, then proceed to merge:
+```bash
+# Fresh full body + comments — do NOT rely on the box grep above; results may be appended after PR open.
+gh pr view <PR> --json body --jq .body > /tmp/pr_body.md
+gh pr view <PR> --comments
+grep -inE '^#{1,4} .*(smoke|manual).*(result|evidence|output|run|verified)' /tmp/pr_body.md
+grep -cE '<img |!\[' /tmp/pr_body.md   # screenshot count
+```
+
+Grade what you find against the derived smoke script step by step (every step/branch covered, expected key lines present and in order, error paths included, no `xox*-` secret in the paste). Full coverage → **3c**. Partial → prompt naming the specific gaps. Output that contradicts what the code prints → a failed smoke: hold, don't tick. Nothing found → **3a**/**3b**.
+
+**3a. Hold & run the smoke test** — do **not** merge or set Status → Done. Re-surface the derived smoke script from the PR collapsible and wait. When the user reports it passed, re-run the Step 7 close-out sweep from the top, tick the box `(verified manually by @efmcuiti)`, then merge.
+
+**3b. Skip & close (waived)** — leave the box unchecked (never tick an unverified item), but annotate it inline so the conscious skip is on the record, then proceed to merge:
 
 ```bash
 # Append the waiver note to the matched box line, then push the edited body.
 gh pr view <PR> --json body --jq .body > /tmp/body.md
 # edit /tmp/body.md: append " (waived by @efmcuiti at close — not run)" to the matched "- [ ]" line
 gh pr edit <PR> --body-file /tmp/body.md
+# repeat with `gh issue view/edit <N>` when the same box lives on the issue
+```
+
+**3c. Evidence-attested** — results were posted and graded as full coverage in step 2. Report step-by-step what the evidence satisfied, ask once to confirm, then tick the box noting *where* the proof lives:
+
+```bash
+# edit /tmp/pr_body.md: change the matched "- [ ]" line to
+#   - [x] ... — verified manually by @efmcuiti (results in PR body)
+gh pr edit <PR> --body-file /tmp/pr_body.md
 # repeat with `gh issue view/edit <N>` when the same box lives on the issue
 ```
 
