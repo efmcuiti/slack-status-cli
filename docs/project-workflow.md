@@ -227,14 +227,15 @@ At close-out (Step 7a, before the Step 8 merge), a manual/unverifiable checkbox 
 
 Any unchecked box inside a `Recommended manual smoke steps` collapsible also counts, even if its wording misses the keywords above.
 
-**2. Check for already-posted results — before prompting.** The user may have run the smoke test and recorded it in the PR (a `### Manual smoke results` section). The grep in step 1 only returns the box line, so it cannot see that; fetch the **whole** body fresh — plus comments, since results are sometimes posted there — and read it:
+**2. Check for already-posted results — before prompting.** The user may have run the smoke test and recorded it in the PR under a heading like `### Smoke manual test results` (the wording used in #85; exact phrasing varies, which is why the grep below stays loose). The grep in step 1 only returns the box line, so it cannot see that; capture the **whole** body fresh **and** the comments — results are sometimes posted after the PR was opened — then search both:
 
 ```bash
 # Fresh full body + comments — do NOT rely on the box grep above; results may be appended after PR open.
 gh pr view <PR> --json body --jq .body > /tmp/pr_body.md
-gh pr view <PR> --comments
-grep -inE '^#{1,4} .*(smoke|manual).*(result|evidence|output|run|verified)' /tmp/pr_body.md
-grep -cE '<img |!\[' /tmp/pr_body.md   # screenshot count
+gh api repos/efmcuiti/slack-status-cli/issues/<PR>/comments --jq '.[].body' > /tmp/pr_comments.md
+grep -inE '^#{1,4} .*(smoke|manual).*(result|evidence|output|run|verified)' /tmp/pr_body.md /tmp/pr_comments.md
+grep -cE '<img |!\[' /tmp/pr_body.md /tmp/pr_comments.md   # screenshot count per file
+gh pr view <PR> --comments   # then read them in context (also surfaces review bodies)
 ```
 
 Grade what you find against the derived smoke script step by step (every step/branch covered, expected key lines present and in order, error paths included, no `xox*-` secret in the paste). Full coverage → **3c**. Partial → prompt naming the specific gaps. Output that contradicts what the code prints → a failed smoke: hold, don't tick. Nothing found → **3a**/**3b**.
