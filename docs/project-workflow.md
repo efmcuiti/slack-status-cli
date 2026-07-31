@@ -234,7 +234,7 @@ Any unchecked box inside a `Recommended manual smoke steps` collapsible also cou
 gh pr view <PR> --json body --jq .body > /tmp/pr_body.md
 gh api repos/efmcuiti/slack-status-cli/issues/<PR>/comments --jq '.[].body' > /tmp/pr_comments.md
 grep -inE '^#{1,4} .*(smoke|manual).*(result|evidence|output|run|verified)' /tmp/pr_body.md /tmp/pr_comments.md
-grep -cE '<img |!\[' /tmp/pr_body.md /tmp/pr_comments.md   # screenshot count per file
+grep -cE '<img |!\[' /tmp/pr_body.md /tmp/pr_comments.md   # per file: LINES holding an image ref, not an exact image count
 gh pr view <PR> --comments   # then read them in context (also surfaces review bodies)
 ```
 
@@ -256,7 +256,8 @@ gh pr edit <PR> --body-file /tmp/body.md
 
 ```bash
 # edit /tmp/pr_body.md: change the matched "- [ ]" line to
-#   - [x] ... — verified manually by @efmcuiti (results in PR body)
+#   - [x] ... — verified manually by @efmcuiti (results in <where step 2 found them:
+#   PR body / comment <id>>) — name the actual location, since step 2 searches both
 gh pr edit <PR> --body-file /tmp/pr_body.md
 # repeat with `gh issue view/edit <N>` when the same box lives on the issue
 ```
