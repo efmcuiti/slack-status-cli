@@ -90,7 +90,7 @@ RSpec.describe SlackStatusCli::Slack::Commands::SetStatus do
         expect(output.string).to match(/📤 Setting Slack status: :fox_face:\n/)
       end
 
-      it "prints a clearing line when the text is empty" do
+      it "prints a clearing line when the text and the emoji are both empty" do
         stub_request(:post, "https://slack.com/api/users.profile.set")
           .to_return(status: 200, body: '{"ok":true}')
 
