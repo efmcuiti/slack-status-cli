@@ -71,7 +71,26 @@ RSpec.describe SlackStatusCli::Slack::Commands::SetStatus do
         expect(output.string).not_to match(/Setting Slack status:  /)
       end
 
-      it "prints a clearing line when the text is empty" do
+      it "reports 'Setting' for an emoji-only status, mirroring the payload it sends" do
+        stub_request(:post, "https://slack.com/api/users.profile.set")
+          .to_return(status: 200, body: '{"ok":true}')
+
+        described_class.call(token: token, text: "", emoji: ":fox_face:", expiration: nil, output: output)
+
+        expect(output.string).to include("📤 Setting Slack status: :fox_face:")
+        expect(output.string).not_to include("📤 Clearing Slack status")
+      end
+
+      it "omits the text cleanly for an emoji-only status (no trailing space)" do
+        stub_request(:post, "https://slack.com/api/users.profile.set")
+          .to_return(status: 200, body: '{"ok":true}')
+
+        described_class.call(token: token, text: "", emoji: ":fox_face:", expiration: nil, output: output)
+
+        expect(output.string).to match(/📤 Setting Slack status: :fox_face:\n/)
+      end
+
+      it "prints a clearing line when the text and the emoji are both empty" do
         stub_request(:post, "https://slack.com/api/users.profile.set")
           .to_return(status: 200, body: '{"ok":true}')
 
