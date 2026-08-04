@@ -36,6 +36,15 @@ Project field IDs (for agent automation):
 | Status → In Progress | `47fc9ee4` |
 | Status → Done | `98236657` |
 
+## Implementation loop
+
+Per the implementation-loop pointer contract in `gh-sdlc`, this project declares its executor here. `/gh-sdlc` owns the lifecycle up to the issue breakdown and delegates per-task execution to this loop, reading the section on entry — without it, a Planning run has to stop and ask which executor the project uses.
+
+- **Executor:** `/ruby-dev`
+- **Test command:** `bundle exec rspec <path>`
+- **Lint command:** `bundle exec rubocop` — **not configured in this project** (no `rubocop` gem in the `Gemfile`), so `/ruby-dev` detects its absence and skips the lint step
+- **Test-file convention:** `spec/` mirrors `lib/`, `_spec.rb` suffix
+
 ## Filtering by label
 
 The table view supports `label:` qualifiers directly in the search bar. Useful filters:
@@ -291,7 +300,7 @@ On top of the refactor taxonomy, maintenance adds three directly-executable issu
 Every intake is classified once:
 
 - **Directly executable** (one PR, clear approach, no open questions) → `/ruby-dev` (most bugs, chores, small enhancements).
-- **Needs design** (open questions, >1 substantial class, an "and" in the title, `size:l` not dominated by one hard problem, architectural impact) → `/gh-sdlc` scoped to that single feature (Discovery → Design → Planning), whose tasks flow back to `/ruby-dev`.
+- **Needs design** (open questions, >1 substantial class, an "and" in the title, `size:l` not dominated by one hard problem, architectural impact) → `/gh-sdlc` scoped to that single feature (Discovery → Design → Planning), whose tasks flow back to `/ruby-dev`. Discovery is **two-staged**: `discovery-approved` files the question issues and then **stops** — you run them yourself via `/gh-sdlc discovery run <N>` (or `run --all`) — and only `findings-approved`, once every question is closed and consolidated into the findings PR, unlocks Design.
 
 ### Commands
 
