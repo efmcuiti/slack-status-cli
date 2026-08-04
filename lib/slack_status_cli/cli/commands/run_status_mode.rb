@@ -38,8 +38,9 @@ module SlackStatusCli
 
         def call
           token = resolve
-          signal_installer.call(token: token)
-          updater.call(token: token, mode: mode, text: text, emoji: emoji, expiration: expiration, telemetry: telemetry)
+          signal_installer.call(token: token, output: output)
+          updater.call(token: token, mode: mode, text: text, emoji: emoji, expiration: expiration, output: output,
+                       telemetry: telemetry)
         end
 
         private

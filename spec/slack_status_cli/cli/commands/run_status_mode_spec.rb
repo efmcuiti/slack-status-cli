@@ -24,28 +24,32 @@ RSpec.describe SlackStatusCli::Cli::Commands::RunStatusMode do
 
   let(:recording_updater) do
     Class.new do
-      attr_reader :calls, :telemetries
+      attr_reader :calls, :telemetries, :outputs
       def initialize
         @calls = []
         @telemetries = []
+        @outputs = []
       end
 
-      def call(token:, mode:, text: nil, emoji: nil, expiration: nil, telemetry: nil)
+      def call(token:, mode:, text: nil, emoji: nil, expiration: nil, output: nil, telemetry: nil)
         @calls << { token: token, mode: mode, text: text, emoji: emoji, expiration: expiration }
         @telemetries << telemetry
+        @outputs << output
       end
     end.new
   end
 
   let(:recording_signals) do
     Class.new do
-      attr_reader :tokens
+      attr_reader :tokens, :outputs
       def initialize
         @tokens = []
+        @outputs = []
       end
 
-      def call(token:)
+      def call(token:, output: nil)
         @tokens << token
+        @outputs << output
       end
     end.new
   end
@@ -85,6 +89,16 @@ RSpec.describe SlackStatusCli::Cli::Commands::RunStatusMode do
     it "registers signal handlers with the resolved token" do
       run(command: "myth")
       expect(recording_signals.tokens).to eq(["xoxp-mode"])
+    end
+
+    it "forwards its injected output to UpdateStatus so every status line is captured" do
+      run(command: "myth")
+      expect(recording_updater.outputs).to eq([output])
+    end
+
+    it "forwards its injected output to the signal installer" do
+      run(command: "myth")
+      expect(recording_signals.outputs).to eq([output])
     end
 
     it "threads the injected telemetry into UpdateStatus (composition-root wiring)" do
