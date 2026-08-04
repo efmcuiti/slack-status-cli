@@ -44,7 +44,7 @@ module SlackStatusCli
             next unless shutdown_requested && token
 
             output.puts(GOODBYE)
-            clearer.call(token: token)
+            clearer.call(token: token, output: output)
           end
 
           nil

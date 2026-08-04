@@ -29,13 +29,15 @@ RSpec.describe SlackStatusCli::Cli::Commands::InstallSignalHandlers do
 
   let(:clearer) do
     Class.new do
-      attr_reader :tokens
+      attr_reader :tokens, :outputs
       def initialize
         @tokens = []
+        @outputs = []
       end
 
-      def call(token:)
+      def call(token:, output: nil)
         @tokens << token
+        @outputs << output
       end
     end.new
   end
@@ -65,6 +67,13 @@ RSpec.describe SlackStatusCli::Cli::Commands::InstallSignalHandlers do
       trapper.traps["INT"].call
       exit_hook.block.call
       expect(clearer.tokens).to eq(["xoxp-sig"])
+    end
+
+    it "forwards its injected output to the clearer so its status line is captured too" do
+      install
+      trapper.traps["INT"].call
+      exit_hook.block.call
+      expect(clearer.outputs).to eq([output])
     end
 
     it "does not clear the status on a normal exit when no signal fired" do
