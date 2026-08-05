@@ -42,7 +42,7 @@ Per the implementation-loop pointer contract in `gh-sdlc`, this project declares
 
 - **Executor:** `/ruby-dev`
 - **Test command:** `bundle exec rspec <path>`
-- **Lint command:** `bundle exec rubocop` — **not configured in this project** (no `rubocop` gem in the `Gemfile`), so `/ruby-dev` detects its absence and skips the lint step
+- **Lint command:** `bundle exec rubocop` — **not configured in this project**: there is no `rubocop` gem in the `Gemfile`, so the command fails until one is added
 - **Test-file convention:** `spec/` mirrors `lib/`, `_spec.rb` suffix
 
 ## Filtering by label
