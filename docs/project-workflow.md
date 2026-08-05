@@ -36,6 +36,15 @@ Project field IDs (for agent automation):
 | Status → In Progress | `47fc9ee4` |
 | Status → Done | `98236657` |
 
+## Implementation loop
+
+Per the implementation-loop pointer contract in `gh-sdlc`, this project declares its executor here. `/gh-sdlc` owns the lifecycle up to the issue breakdown and delegates per-task execution to this loop, reading the section on entry — without it, a Planning run has to stop and ask which executor the project uses.
+
+- **Executor:** `/ruby-dev`
+- **Test command:** `bundle exec rspec <path>`
+- **Lint command:** `bundle exec rubocop` — **not configured in this project**: there is no `rubocop` gem in the `Gemfile`, so the command fails until one is added
+- **Test-file convention:** `spec/` mirrors `lib/`, `_spec.rb` suffix
+
 ## Filtering by label
 
 The table view supports `label:` qualifiers directly in the search bar. Useful filters:
@@ -264,7 +273,7 @@ gh pr edit <PR> --body-file /tmp/pr_body.md
 
 ## Maintenance workflow (post-v1)
 
-Once v1.0 ships, this project runs the **maintenance mode** defined generically in the `rails-sdlc` skill's `MAINTENANCE.md` (the model, taxonomy, triage table, and command procedures live there). This section records only the slack-status-cli specifics.
+Once v1.0 ships, this project runs the **maintenance mode** defined generically in the `gh-sdlc` skill's `MAINTENANCE.md` (the model, taxonomy, triage table, and command procedures live there). This section records only the slack-status-cli specifics.
 
 ### Window model
 
@@ -272,7 +281,7 @@ A **milestone is the time-boxed window** — issues are scheduled into it and it
 
 - Milestone naming is **version-based**: `v1.1`, `v1.2`, ... (a window = "what goes into the next release").
 - **No milestone = the triage inbox** — a freshly filed ask sits milestone-less until triaged; assigning a milestone *is* the act of scheduling it.
-- `type:epic` is reserved for large features that earn a `/rails-sdlc` breakdown; everything else is a standalone typed issue (below). Milestone and epic are orthogonal — a feature epic's tasks all carry the same milestone.
+- `type:epic` is reserved for large features that earn a `/gh-sdlc` breakdown; everything else is a standalone typed issue (below). Milestone and epic are orthogonal — a feature epic's tasks all carry the same milestone.
 
 ### Taxonomy additions
 
@@ -284,22 +293,22 @@ On top of the refactor taxonomy, maintenance adds three directly-executable issu
 | `type:enhancement` | Small improvement / feature ask |
 | `type:chore` | Deps, CI, docs, no-behavior-change refactor |
 
-`phase:*` labels are **retired for standalone maintenance issues** (the milestone is the grouping now); they reappear only inside an escalated `/rails-sdlc` feature epic.
+`phase:*` labels are **retired for standalone maintenance issues** (the milestone is the grouping now); they reappear only inside an escalated `/gh-sdlc` feature epic.
 
 ### Triage routing
 
 Every intake is classified once:
 
 - **Directly executable** (one PR, clear approach, no open questions) → `/ruby-dev` (most bugs, chores, small enhancements).
-- **Needs design** (open questions, >1 substantial class, an "and" in the title, `size:l` not dominated by one hard problem, architectural impact) → `/rails-sdlc` scoped to that single feature (Discovery → Design → Planning), whose tasks flow back to `/ruby-dev`.
+- **Needs design** (open questions, >1 substantial class, an "and" in the title, `size:l` not dominated by one hard problem, architectural impact) → `/gh-sdlc` scoped to that single feature (Discovery → Design → Planning), whose tasks flow back to `/ruby-dev`. Discovery is **two-staged**: `discovery-approved` files the question issues and then **stops** — you run them yourself via `/gh-sdlc discovery run <N>` (or `run --all`) — and only `findings-approved`, once every question is closed and consolidated into the findings PR, unlocks Design.
 
 ### Commands
 
-Day-to-day maintenance is driven by the `rails-sdlc` verbs:
+Day-to-day maintenance is driven by the `gh-sdlc` verbs:
 
-- `/rails-sdlc maintenance setup` — idempotent: ensure the labels above, open the next `vX.Y` milestone, keep this section current.
-- `/rails-sdlc maintenance create <bug|enhancement|chore> <context>` — plan mode + `/grill-me` to clarify and triage, then file + route on approval.
-- `/rails-sdlc maintenance close-window` — at each release: roll open survivors forward to the next milestone, then close the current one.
+- `/gh-sdlc maintenance setup` — idempotent: ensure the labels above, open the next `vX.Y` milestone, keep this section current.
+- `/gh-sdlc maintenance create <bug|enhancement|chore> <context>` — plan mode + `/grill-me` to clarify and triage, then file + route on approval.
+- `/gh-sdlc maintenance close-window` — at each release: roll open survivors forward to the next milestone, then close the current one.
 
 ### Saved views (manual Projects-v2 UI step)
 
